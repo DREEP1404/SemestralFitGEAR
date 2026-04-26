@@ -33,7 +33,15 @@ export const stripeWebhookController = asyncHandler(async (req: Request, res: Re
     ? signatureHeader[0]
     : signatureHeader
 
-  const event = constructWebhookEvent(req.body as Buffer, signature)
+  const rawPayload = Buffer.isBuffer(req.body)
+    ? req.body
+    : typeof req.body === 'string'
+      ? Buffer.from(req.body)
+      : req.body instanceof Uint8Array
+        ? Buffer.from(req.body)
+        : Buffer.from(JSON.stringify(req.body ?? {}))
+
+  const event = await constructWebhookEvent(rawPayload, signature)
   await handleStripeEvent(event)
 
   res.status(200).json({ received: true })
