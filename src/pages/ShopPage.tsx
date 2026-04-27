@@ -35,7 +35,6 @@ export function ShopPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [useFallbackCatalog, setUseFallbackCatalog] = useState(false)
-  const [catalogNotice, setCatalogNotice] = useState<string | null>(null)
 
   const activeCategories = useFallbackCatalog ? fallbackCategories : categories
 
@@ -60,24 +59,39 @@ export function ShopPage() {
         }
 
         if (result.length === 0) {
-          setUseFallbackCatalog(true)
-          setCategories(fallbackCategories)
-          setCatalogNotice('Mostrando catalogo local de respaldo.')
+          // No categories in database — keep empty categories (no automatic local fallback)
+          setCategories([])
+          setUseFallbackCatalog(false)
           setLoading(false)
           return
         }
 
         setCategories(result.map((category) => ({ value: category._id, label: category.name })))
-        setCatalogNotice(null)
+        setUseFallbackCatalog(false)
         setLoading(false)
       })
       .catch((apiError: unknown) => {
         if (!active) {
           return
         }
-        setUseFallbackCatalog(true)
-        setCategories(fallbackCategories)
-        setError(apiError instanceof Error ? apiError.message : 'No se pudieron cargar categorias.')
+
+        // Only enable local fallback for critical server errors (5xx) or network failures.
+        if (apiError instanceof ApiError) {
+          if (apiError.status >= 500) {
+            setUseFallbackCatalog(true)
+            setCategories(fallbackCategories)
+            setError(null)
+          } else {
+            setUseFallbackCatalog(false)
+            setError(apiError.message)
+          }
+        } else {
+          // Network or unexpected error: treat as critical and enable fallback
+          setUseFallbackCatalog(true)
+          setCategories(fallbackCategories)
+          setError(null)
+        }
+
         setLoading(false)
       })
 
@@ -107,6 +121,7 @@ export function ShopPage() {
     let active = true
 
     if (useFallbackCatalog) {
+      // If fallback is active we don't attempt product requests.
       return () => {
         active = false
       }
@@ -137,20 +152,25 @@ export function ShopPage() {
 
         setProducts(result)
         setError(null)
-        setCatalogNotice(null)
       })
       .catch((apiError: unknown) => {
         if (!active) {
           return
         }
+
+        // Only enable local fallback for critical server errors (5xx) or network failures.
         if (apiError instanceof ApiError) {
-          setUseFallbackCatalog(true)
-          setError(null)
-          setCatalogNotice('Conexion temporalmente inestable. Mostrando catalogo local.')
+          if (apiError.status >= 500) {
+            setUseFallbackCatalog(true)
+            setError(null)
+          } else {
+            setUseFallbackCatalog(false)
+            setError(apiError.message)
+          }
         } else {
+          // Network or unexpected error: treat as critical and enable fallback
           setUseFallbackCatalog(true)
           setError(null)
-          setCatalogNotice('Conexion temporalmente inestable. Mostrando catalogo local.')
         }
       })
       .finally(() => {
@@ -230,11 +250,7 @@ export function ShopPage() {
         </div>
       </div>
 
-      {catalogNotice ? (
-        <div className="rounded-2xl border border-lime-200 bg-lime-50 px-4 py-3 text-sm text-lime-800 shadow-[0_10px_24px_-18px_rgba(88,214,79,0.5)]">
-          {catalogNotice}
-        </div>
-      ) : null}
+      {/* catalogNotice removed: visual message intentionally disabled */}
 
       {loading ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 shadow-sm">

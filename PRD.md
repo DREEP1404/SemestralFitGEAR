@@ -71,7 +71,7 @@ El usuario necesita encontrar productos deportivos de forma rapida, agregarlos a
 ## 11. Dependencias
 - React, Vite y TypeScript en frontend.
 - Clerk para autenticacion.
-- TanStack Query para cache y sincronizacion.
+- TanStack Start para cache y sincronizacion.
 - Framer Motion para microinteracciones.
 - Express, MongoDB y Stripe en backend.
 
