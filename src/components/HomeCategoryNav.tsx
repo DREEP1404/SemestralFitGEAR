@@ -55,6 +55,21 @@ export function HomeCategoryNav() {
           Inicio
         </button>
 
+        <button
+          type="button"
+          onClick={() => {
+            setSelected('shop')
+            navigate('/shop')
+          }}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            selected === 'shop'
+              ? 'bg-lime-100 text-lime-700'
+              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          Todas
+        </button>
+
         {categoryLinks.map((category) => (
           <button
             key={category}
@@ -72,29 +87,6 @@ export function HomeCategoryNav() {
             {category}
           </button>
         ))}
-
-        <button
-          type="button"
-          onClick={() => {
-            setSelected('Shop')
-            navigate('/shop')
-          }}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-            selected === 'Shop'
-              ? 'bg-lime-100 text-lime-700'
-              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-          }`}
-        >
-          Shop
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate('/shop?sortBy=price&sortOrder=asc')}
-          className="rounded-full px-4 py-2 text-sm font-semibold text-lime-700 transition hover:bg-lime-50"
-        >
-          Descuentos
-        </button>
       </div>
     </nav>
   )

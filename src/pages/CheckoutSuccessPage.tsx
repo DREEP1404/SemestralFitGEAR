@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { ApiError } from '../api/apiClient'
 import { getButtonClassName } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
@@ -93,18 +93,20 @@ export function CheckoutSuccessPage() {
         <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{paymentError}</p>
       ) : null}
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Link
-          to="/shop"
+        <button
+          type="button"
+          onClick={() => window.location.assign('/shop')}
           className={getButtonClassName()}
         >
           Seguir comprando
-        </Link>
-        <Link
-          to="/account"
+        </button>
+        <button
+          type="button"
+          onClick={() => window.location.assign('/orders')}
           className={getButtonClassName({ variant: 'secondary' })}
         >
-          Ver mi cuenta
-        </Link>
+          Ver mis pedidos
+        </button>
       </div>
     </motion.section>
   )

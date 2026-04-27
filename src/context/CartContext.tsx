@@ -1,4 +1,5 @@
 import {
+  useCallback,
   createContext,
   useContext,
   useMemo,
@@ -69,7 +70,7 @@ function cartReducer(state: CartItemModel[], action: CartAction): CartItemModel[
         )
         .filter((item) => item.quantity > 0)
     case 'clear':
-      return []
+      return state.length > 0 ? [] : state
     default:
       return state
   }
@@ -97,6 +98,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [subtotal, taxAmount, shippingAmount],
   )
 
+  const addItem = useCallback((product: Product) => {
+    dispatch({ type: 'add', product })
+  }, [])
+
+  const removeItem = useCallback((productId: string) => {
+    dispatch({ type: 'remove', productId })
+  }, [])
+
+  const increase = useCallback((productId: string) => {
+    dispatch({ type: 'increase', productId })
+  }, [])
+
+  const decrease = useCallback((productId: string) => {
+    dispatch({ type: 'decrease', productId })
+  }, [])
+
+  const clearCart = useCallback(() => {
+    dispatch({ type: 'clear' })
+  }, [])
+
   const value = useMemo(
     () => ({
       items,
@@ -104,13 +125,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       taxAmount,
       shippingAmount,
       total,
-      addItem: (product: Product) => dispatch({ type: 'add', product }),
-      removeItem: (productId: string) => dispatch({ type: 'remove', productId }),
-      increase: (productId: string) => dispatch({ type: 'increase', productId }),
-      decrease: (productId: string) => dispatch({ type: 'decrease', productId }),
-      clearCart: () => dispatch({ type: 'clear' }),
+      addItem,
+      removeItem,
+      increase,
+      decrease,
+      clearCart,
     }),
-    [items, subtotal, taxAmount, shippingAmount, total],
+    [items, subtotal, taxAmount, shippingAmount, total, addItem, removeItem, increase, decrease, clearCart],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

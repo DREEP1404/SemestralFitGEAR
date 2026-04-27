@@ -8,6 +8,7 @@ interface Slide {
   title: string
   subtitle: string
   image: string
+  ctaTo: string
 }
 
 const slides: Slide[] = [
@@ -17,6 +18,7 @@ const slides: Slide[] = [
     subtitle: 'Equipamiento premium para potencia, cardio y recuperacion con envio rapido.',
     image:
       'https://blog.dema-argentina.com.ar/hs-fs/hubfs/rolo%20masajeador.jpg?width=940&height=486&name=rolo%20masajeador.jpg',
+    ctaTo: '/shop?category=Movilidad',
   },
   {
     id: 'focus',
@@ -24,6 +26,7 @@ const slides: Slide[] = [
     subtitle: 'Mancuernas y accesorios de fuerza para resultados visibles semana a semana.',
     image:
       'https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    ctaTo: '/shop?category=Mancuernas',
   },
   {
     id: 'routine',
@@ -31,6 +34,7 @@ const slides: Slide[] = [
     subtitle: 'Siente la diferencia con accesorios ligeros, durables y listos para accion.',
     image:
       'https://hips.hearstapps.com/hmg-prod/images/she-never-skips-a-gym-session-royalty-free-image-1688728456.jpg?crop=1xw:0.84335xh;0,0.0168xh',
+    ctaTo: '/shop?category=Cardio',
   },
 ]
 
@@ -117,7 +121,7 @@ export function HeroCarousel() {
                   <p className="max-w-xl text-sm text-gray-700 md:text-lg">{slide.subtitle}</p>
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <Link
-                      to="/shop"
+                      to={slide.ctaTo}
                       className="inline-flex rounded-full bg-lime-500 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-lime-400"
                     >
                       Explorar productos

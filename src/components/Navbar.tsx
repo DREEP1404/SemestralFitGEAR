@@ -12,7 +12,7 @@ export function Navbar() {
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0)
   const shouldReloadDocument = location.pathname.startsWith('/checkout/')
   const homePath = isAdmin ? '/admin' : '/'
-  const showBackButton = location.pathname !== '/'
+  const showBackButton = !isAdmin && location.pathname !== '/'
 
   function navigateTo(path: string) {
     if (shouldReloadDocument) {
