@@ -7,25 +7,23 @@ interface OrderItemRowProps {
 
 export function OrderItemRow({ item }: OrderItemRowProps) {
   return (
-    <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-3 sm:grid-cols-[56px_1fr_auto_auto_auto] sm:items-center sm:gap-4">
-      <div className="h-14 w-14 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+    <div className="grid gap-3 rounded-xl border border-white/[0.06] bg-slate-950/40 p-3 sm:grid-cols-[56px_1fr_auto_auto_auto] sm:items-center sm:gap-4">
+      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-white to-slate-100">
         {item.productImage ? (
-          <img src={item.productImage} alt={item.productName} className="h-full w-full object-cover" />
+          <img src={item.productImage} alt={item.productName} className="max-h-full max-w-full object-contain p-1" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
-            Sin imagen
-          </div>
+          <span className="text-[10px] text-slate-400">Sin imagen</span>
         )}
       </div>
 
-      <div>
-        <p className="text-sm font-semibold text-gray-900">{item.productName}</p>
-        <p className="text-xs text-gray-500">ID: {item.productId}</p>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-white">{item.productName}</p>
+        <p className="truncate font-mono text-xs text-slate-500">ID: {item.productId}</p>
       </div>
 
-      <p className="text-xs text-gray-600 sm:text-sm">Cant: {item.quantity}</p>
-      <p className="text-xs text-gray-600 sm:text-sm">Unit: {formatCurrency(item.unitPrice)}</p>
-      <p className="text-xs font-semibold text-gray-900 sm:text-sm">{formatCurrency(item.subtotal)}</p>
+      <p className="text-xs text-slate-400 sm:text-sm">Cant: {item.quantity}</p>
+      <p className="text-xs text-slate-400 sm:text-sm">Unit: {formatCurrency(item.unitPrice)}</p>
+      <p className="text-xs font-semibold text-white sm:text-sm">{formatCurrency(item.subtotal)}</p>
     </div>
   )
 }

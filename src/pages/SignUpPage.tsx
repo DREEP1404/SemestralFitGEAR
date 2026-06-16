@@ -1,5 +1,6 @@
 import { SignUp, useAuth } from '@clerk/clerk-react'
 import { Link, Navigate } from 'react-router-dom'
+import { clerkDarkAppearance } from '../lib/clerkAppearance'
 
 export function SignUpPage() {
   const { isSignedIn } = useAuth()
@@ -9,28 +10,41 @@ export function SignUpPage() {
   }
 
   return (
-    <section className="flex min-h-screen flex-col bg-gray-50">
-      <header className="relative flex h-16 items-center border-b border-gray-200 px-4 sm:px-6">
+    <section className="relative flex min-h-screen flex-col bg-slate-950 text-slate-100">
+      {/* Lime ambient glow */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-lime-400/10 blur-[120px]" />
+
+      <header className="relative flex h-16 items-center border-b border-white/[0.06] px-4 sm:px-6">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-gray-600 transition hover:text-gray-900"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition hover:text-white"
         >
-          <span aria-hidden>←</span>
-          <span>Volver al inicio</span>
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Volver al inicio
         </Link>
 
-        <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-[0.18em] text-gray-900 sm:text-xl">
-          FITGEAR
+        <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-xl font-black uppercase tracking-widest">
+          <span className="text-white">FIT</span>
+          <span className="text-lime-400">GEAR</span>
         </p>
       </header>
 
-      <div className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg sm:p-8">
+      <div className="relative flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Crea tu cuenta</h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Unete a FITGEAR y equipa tu entrenamiento.
+            </p>
+          </div>
           <SignUp
             routing="path"
             path="/sign-up"
             signInUrl="/login"
             forceRedirectUrl="/"
+            appearance={clerkDarkAppearance}
           />
         </div>
       </div>

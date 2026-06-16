@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useSearchParams } from 'react-router-dom'
 import { ApiError } from '../api/apiClient'
-import { getButtonClassName } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useCheckoutPaymentConfirmationQuery } from '../hooks/usePaymentQueries'
@@ -75,35 +74,53 @@ export function CheckoutSuccessPage() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: 'easeOut' }}
-      className="rounded-3xl border border-lime-200 bg-white p-10 text-center shadow-[0_14px_34px_-24px_rgba(15,23,42,0.45)]"
+      className="mx-auto max-w-xl rounded-3xl border border-lime-400/20 bg-slate-900 p-10 text-center"
     >
-      <p className="text-xs uppercase tracking-[0.2em] text-lime-700">{badge}</p>
-      <h1 className="mt-3 text-4xl font-black text-slate-900">{title}</h1>
-      <p className="mt-3 text-slate-600">{description}</p>
+      <div
+        className={`mx-auto inline-flex h-16 w-16 items-center justify-center rounded-2xl ${
+          isPaid ? 'bg-lime-400/15 text-lime-400' : 'bg-white/[0.04] text-slate-400'
+        }`}
+      >
+        {isPaid ? (
+          <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-lime-400" aria-hidden />
+        )}
+      </div>
+
+      <p className="mt-6 text-xs font-bold uppercase tracking-[0.24em] text-lime-400">{badge}</p>
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">{title}</h1>
+      <p className="mt-3 text-slate-400">{description}</p>
       {orderId ? (
-        <p className="mt-2 text-sm text-slate-500">Orden: {orderId}</p>
+        <p className="mt-3 inline-block rounded-full bg-white/[0.04] px-3 py-1 font-mono text-xs text-slate-400">
+          Orden: {orderId}
+        </p>
       ) : null}
       {confirmationQuery.isLoading || confirmationQuery.isFetching ? (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lime-500" aria-hidden />
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-slate-300">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lime-400" aria-hidden />
           Confirmando pago y actualizando inventario...
         </div>
       ) : null}
       {paymentError ? (
-        <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{paymentError}</p>
+        <p className="mt-5 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          {paymentError}
+        </p>
       ) : null}
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
           onClick={() => window.location.assign('/shop')}
-          className={getButtonClassName()}
+          className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300"
         >
           Seguir comprando
         </button>
         <button
           type="button"
           onClick={() => window.location.assign('/orders')}
-          className={getButtonClassName({ variant: 'secondary' })}
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
         >
           Ver mis pedidos
         </button>

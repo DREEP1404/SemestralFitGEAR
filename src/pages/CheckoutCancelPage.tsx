@@ -2,7 +2,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { createCheckoutSession } from '../api/fitgearApi'
-import { Button, getButtonClassName } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
 import { queryKeys } from '../lib/queryKeys'
@@ -60,43 +59,64 @@ export function CheckoutCancelPage() {
         ? `La orden esta en estado ${orderQuery.data.status}. No se puede reintentar el checkout.`
         : null
 
+  const retryDisabled =
+    !orderId ||
+    !canRetryPayment ||
+    retryCheckoutMutation.isPending ||
+    orderQuery.isLoading ||
+    orderQuery.isFetching
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: 'easeOut' }}
-      className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-[0_14px_34px_-24px_rgba(15,23,42,0.45)]"
+      className="mx-auto max-w-xl rounded-3xl border border-white/[0.08] bg-slate-900 p-10 text-center"
     >
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Pago cancelado</p>
-      <h1 className="mt-3 text-4xl font-black text-slate-900">No se completo el pago</h1>
-      <p className="mt-3 text-slate-600">
+      <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-400/10 text-amber-300">
+        <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+
+      <p className="mt-6 text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Pago cancelado</p>
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">No se completo el pago</h1>
+      <p className="mt-3 text-slate-400">
         Tu orden sigue en estado pendiente. Puedes volver al carrito y reintentar cuando quieras.
       </p>
       {orderId ? (
-        <p className="mt-2 text-sm text-slate-500">Orden pendiente: {orderId}</p>
+        <p className="mt-3 inline-block rounded-full bg-white/[0.04] px-3 py-1 font-mono text-xs text-slate-400">
+          Orden pendiente: {orderId}
+        </p>
       ) : null}
       {retryError ? (
-        <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{retryError}</p>
+        <p className="mt-5 rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {retryError}
+        </p>
       ) : null}
       {orderStatusMessage ? (
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{orderStatusMessage}</p>
+        <p className="mt-5 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          {orderStatusMessage}
+        </p>
       ) : null}
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Button
-          disabled={!orderId || !canRetryPayment || retryCheckoutMutation.isPending || orderQuery.isLoading || orderQuery.isFetching}
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          disabled={retryDisabled}
           onClick={() => retryCheckoutMutation.mutate()}
+          className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
           {retryCheckoutMutation.isPending ? 'Reintentando pago...' : 'Reintentar pago'}
-        </Button>
+        </button>
         <Link
           to="/cart"
-          className={getButtonClassName({ variant: 'secondary' })}
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
         >
           Volver al carrito
         </Link>
         <Link
           to="/shop"
-          className={getButtonClassName({ variant: 'secondary' })}
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
         >
           Ir al shop
         </Link>

@@ -3,11 +3,15 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../api/apiClient'
 import { getProductById, getProducts } from '../api/fitgearApi'
 import { ProductCard } from '../components/ProductCard'
-import { SectionTitle } from '../components/SectionTitle'
 import { useCart } from '../context/CartContext'
 import type { Product } from '../types'
 import { formatCurrency } from '../utils/format'
-import { Button, getButtonClassName } from '../components/ui/Button'
+
+const trustPoints = [
+  'Envio rapido a todo el pais',
+  'Compra protegida con Stripe',
+  'Devoluciones faciles',
+]
 
 export function ProductDetailPage() {
   const { id } = useParams()
@@ -65,59 +69,141 @@ export function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 shadow-sm">
-        Cargando producto...
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="aspect-square animate-pulse rounded-3xl bg-slate-900" />
+        <div className="space-y-4">
+          <div className="h-3 w-24 animate-pulse rounded bg-slate-800" />
+          <div className="h-9 w-3/4 animate-pulse rounded bg-slate-800" />
+          <div className="h-20 w-full animate-pulse rounded bg-slate-800" />
+          <div className="h-8 w-32 animate-pulse rounded bg-slate-800" />
+          <div className="h-12 w-full animate-pulse rounded-full bg-slate-800" />
+        </div>
       </div>
     )
   }
 
   if (!product || error) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900">{error ?? 'Producto no encontrado'}</h2>
-        <Link to="/shop" className={`${getButtonClassName({ variant: 'secondary' })} mt-4`}>
+      <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/[0.08] bg-slate-900/60 px-6 py-16 text-center">
+        <h2 className="text-2xl font-bold text-white">{error ?? 'Producto no encontrado'}</h2>
+        <p className="max-w-sm text-sm text-slate-400">
+          Es posible que el producto ya no este disponible en el catalogo.
+        </p>
+        <Link
+          to="/shop"
+          className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300"
+        >
           Volver al catalogo
         </Link>
       </div>
     )
   }
 
+  const outOfStock = product.stock <= 0
+
   return (
-    <div className="space-y-10">
-      <section className="grid gap-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div className="rounded-2xl bg-gray-50 p-4">
+    <div className="space-y-14">
+      {/* Breadcrumb */}
+      <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+        <Link to="/shop" className="transition hover:text-lime-400">
+          Shop
+        </Link>
+        <span className="text-slate-600">/</span>
+        <Link
+          to={`/shop?category=${encodeURIComponent(product.category)}`}
+          className="transition hover:text-lime-400"
+        >
+          {product.category}
+        </Link>
+        <span className="text-slate-600">/</span>
+        <span className="text-slate-300">{product.name}</span>
+      </nav>
+
+      <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        {/* Image */}
+        <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white to-slate-100 p-6">
           <img
             src={product.image}
             alt={product.name}
-            className="h-full min-h-80 w-full rounded-2xl object-cover shadow-sm"
+            className="mx-auto h-full max-h-[34rem] w-full rounded-2xl object-contain"
           />
         </div>
-        <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-lime-700">
-            {product.category}
-          </p>
-          <h1 className="text-4xl font-black text-gray-900">{product.name}</h1>
-          <p className="text-gray-700">{product.description}</p>
-          <p className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</p>
-          <p className="text-sm text-gray-600">Stock disponible: {product.stock} unidades</p>
-          <Button onClick={() => addItem(product)}>
-            Agregar al carrito
-          </Button>
+
+        {/* Info */}
+        <div className="space-y-6 lg:pt-2">
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
+              {product.category}
+            </p>
+            <h1 className="text-4xl font-bold tracking-tight text-white">{product.name}</h1>
+            <p className="leading-relaxed text-slate-400">{product.description}</p>
+          </div>
+
+          <div className="flex items-end gap-4">
+            <p className="text-4xl font-bold tracking-tight text-white">
+              {formatCurrency(product.price)}
+            </p>
+            {outOfStock ? (
+              <span className="mb-1 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-400 ring-1 ring-white/10">
+                Agotado
+              </span>
+            ) : (
+              <span className="mb-1 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400">
+                <span className="h-2 w-2 rounded-full bg-lime-400" aria-hidden />
+                {product.stock} en stock
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => addItem(product)}
+            disabled={outOfStock}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-7 py-4 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_32px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none sm:w-auto"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="10" cy="20" r="1" fill="currentColor" />
+              <circle cx="18" cy="20" r="1" fill="currentColor" />
+            </svg>
+            {outOfStock ? 'Sin stock' : 'Agregar al carrito'}
+          </button>
+
+          <ul className="grid gap-3 border-t border-white/[0.07] pt-6">
+            {trustPoints.map((point) => (
+              <li key={point} className="flex items-center gap-3 text-sm text-slate-300">
+                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-lime-400/15 text-lime-400">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                {point}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      <section>
-        <SectionTitle
-          eyebrow="Relacionados"
-          title="Productos relacionados"
-          description="Complementa tu compra con otros accesorios de la misma categoria."
-        />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {related.map((item) => (
-            <ProductCard key={item.id} product={item} />
-          ))}
-        </div>
-      </section>
+      {related.length > 0 ? (
+        <section className="space-y-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
+              Relacionados
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white">
+              Completa tu equipo
+            </h2>
+            <p className="mt-2 text-slate-400">
+              Otros accesorios de la misma categoria.
+            </p>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

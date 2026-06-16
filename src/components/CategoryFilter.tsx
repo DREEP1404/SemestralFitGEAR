@@ -4,28 +4,28 @@ interface CategoryFilterProps {
   onSelect: (category: string) => void
 }
 
+const baseChip =
+  'rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/40'
+const activeChip = 'bg-lime-400 text-slate-900 shadow-[0_0_20px_-6px_rgba(163,230,53,0.7)]'
+const inactiveChip =
+  'border border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25 hover:text-white'
+
 export function CategoryFilter({ categories, selected, onSelect }: CategoryFilterProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <button
+        type="button"
         onClick={() => onSelect('all')}
-        className={`rounded-full px-4 py-2 text-sm font-medium ${
-          selected === 'all'
-            ? 'bg-lime-500 text-slate-900 shadow-sm hover:bg-lime-400'
-            : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-        }`}
+        className={`${baseChip} ${selected === 'all' ? activeChip : inactiveChip}`}
       >
         Todas
       </button>
       {categories.map((category) => (
         <button
           key={category.value}
+          type="button"
           onClick={() => onSelect(category.value)}
-          className={`rounded-full px-4 py-2 text-sm font-medium ${
-            selected === category.value
-              ? 'bg-lime-500 text-slate-900 shadow-sm hover:bg-lime-400'
-              : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-          }`}
+          className={`${baseChip} ${selected === category.value ? activeChip : inactiveChip}`}
         >
           {category.label}
         </button>

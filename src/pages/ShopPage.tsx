@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { ApiError } from '../api/apiClient'
 import { getCategories, getProducts } from '../api/fitgearApi'
-import { CTAButton } from '../components/CTAButton'
 import { CategoryFilter } from '../components/CategoryFilter'
 import { ProductCard } from '../components/ProductCard'
 import { SearchBar } from '../components/SearchBar'
-import { SectionTitle } from '../components/SectionTitle'
 import { categories as fallbackCategoryNames } from '../data/categories'
 import { products as fallbackProducts } from '../data/products'
 import type { Product } from '../types'
+
+gsap.registerPlugin(useGSAP)
 
 const fallbackCategories = fallbackCategoryNames.map((category) => ({
   value: category,
@@ -19,7 +21,7 @@ const fallbackCategories = fallbackCategoryNames.map((category) => ({
 const normalizeText = (value: string) =>
   value
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .trim()
     .toLowerCase()
 
@@ -35,6 +37,8 @@ export function ShopPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [useFallbackCatalog, setUseFallbackCatalog] = useState(false)
+
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const activeCategories = useFallbackCatalog ? fallbackCategories : categories
 
@@ -213,21 +217,50 @@ export function ShopPage() {
 
   const hasProducts = displayedProducts.length > 0
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <SectionTitle
-          eyebrow="Shop"
-          title="Catalogo FITGEAR"
-          description="Filtra por categoria, busca productos y ordena para encontrar el accesorio ideal."
-        />
+  // Gentle stagger when the result set changes by filter/sort (not per keystroke).
+  // Plain `from` with no ScrollTrigger always settles to the visible state.
+  useGSAP(
+    () => {
+      if (!gridRef.current) return
+      const cards = gridRef.current.children
+      if (cards.length === 0) return
+      gsap.from(cards, {
+        y: 18,
+        autoAlpha: 0,
+        duration: 0.45,
+        ease: 'power2.out',
+        stagger: 0.05,
+        overwrite: true,
+      })
+    },
+    { scope: gridRef, dependencies: [resolvedCategory, sortBy, loading], revertOnUpdate: true },
+  )
 
-        <CTAButton to="/" variant="secondary">
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Shop</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Catalogo FITGEAR</h1>
+          <p className="mt-3 max-w-xl text-slate-400">
+            Filtra por categoria, busca productos y ordena para encontrar el accesorio ideal.
+          </p>
+        </div>
+
+        <Link
+          to="/"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/12 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:bg-white/5"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           Volver al inicio
-        </CTAButton>
+        </Link>
       </div>
 
-      <div className="grid gap-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.35)]">
+      {/* Toolbar */}
+      <div className="space-y-5 rounded-3xl border border-white/[0.08] bg-slate-900/60 p-5 sm:p-6">
         <SearchBar value={query} onChange={setQuery} />
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -236,45 +269,97 @@ export function ShopPage() {
             selected={resolvedCategory ?? 'all'}
             onSelect={setSelectedCategory}
           />
-          <select
-            value={sortBy}
-            onChange={(event) =>
-              setSortBy(event.target.value as 'featured' | 'priceAsc' | 'priceDesc')
-            }
-            className="rounded-full border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
-          >
-            <option value="featured">Destacados</option>
-            <option value="priceAsc">Precio: menor a mayor</option>
-            <option value="priceDesc">Precio: mayor a menor</option>
-          </select>
+          <label className="relative shrink-0">
+            <span className="sr-only">Ordenar productos</span>
+            <select
+              value={sortBy}
+              onChange={(event) =>
+                setSortBy(event.target.value as 'featured' | 'priceAsc' | 'priceDesc')
+              }
+              className="cursor-pointer appearance-none rounded-full border border-white/10 bg-slate-950/60 py-2.5 pl-4 pr-10 text-sm font-medium text-slate-200 outline-none transition focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/30"
+            >
+              <option value="featured">Destacados</option>
+              <option value="priceAsc">Precio: menor a mayor</option>
+              <option value="priceDesc">Precio: mayor a menor</option>
+            </select>
+            <svg className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </label>
         </div>
       </div>
 
-      {/* catalogNotice removed: visual message intentionally disabled */}
+      {/* Result count */}
+      {!loading && !error && hasProducts ? (
+        <p className="text-sm text-slate-400">
+          <span className="font-bold text-white">{displayedProducts.length}</span>{' '}
+          {displayedProducts.length === 1 ? 'producto' : 'productos'}
+        </p>
+      ) : null}
 
+      {/* Loading */}
       {loading ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 shadow-sm">
-          Cargando catalogo...
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="overflow-hidden rounded-2xl border border-white/[0.06] bg-slate-900"
+            >
+              <div className="aspect-square animate-pulse bg-slate-800/60" />
+              <div className="space-y-3 p-5">
+                <div className="h-3 w-16 animate-pulse rounded bg-slate-800" />
+                <div className="h-4 w-3/4 animate-pulse rounded bg-slate-800" />
+                <div className="h-5 w-20 animate-pulse rounded bg-slate-800" />
+                <div className="h-9 w-full animate-pulse rounded-full bg-slate-800" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
 
+      {/* Error */}
       {error ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-5 text-sm text-amber-200">
           {error}
         </div>
       ) : null}
 
+      {/* Empty */}
       {!loading && !error && !hasProducts ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-700 shadow-sm">
-          No se encontraron productos con esos filtros.
+        <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/[0.08] bg-slate-900/60 px-6 py-16 text-center">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04] text-slate-500">
+            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-bold text-white">Sin resultados</p>
+            <p className="mt-1 text-sm text-slate-400">
+              No se encontraron productos con esos filtros. Prueba ajustar la busqueda o la categoria.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('')
+              setSelectedCategory('all')
+            }}
+            className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300"
+          >
+            Limpiar filtros
+          </button>
         </div>
       ) : null}
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {displayedProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {/* Grid */}
+      {!loading && hasProducts ? (
+        <div ref={gridRef} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {displayedProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

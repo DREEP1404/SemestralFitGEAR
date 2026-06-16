@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { getOrders, getProducts, getUsers } from '../api/fitgearApi'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { AdminInventorySection } from '../components/admin/AdminInventorySection'
-import { SectionTitle } from '../components/SectionTitle'
 import { SummaryCard } from '../components/SummaryCard'
 import { useAuth } from '../context/AuthContext'
 import type { BackendOrder, BackendUser, Product } from '../types'
@@ -75,11 +74,15 @@ export function AdminDashboardPage() {
   if (!isAdmin) {
     return (
       <section className="space-y-6">
-        <SectionTitle
-          eyebrow="Acceso Restringido"
-          title="Área exclusiva para administradores"
-          description="Este panel solo está disponible para usuarios con permisos de administración."
-        />
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-400">Acceso restringido</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
+            Area exclusiva para administradores
+          </h1>
+          <p className="mt-3 max-w-2xl text-slate-400">
+            Este panel solo esta disponible para usuarios con permisos de administracion.
+          </p>
+        </div>
         <div className="rounded-3xl border-2 border-amber-400/40 bg-gradient-to-br from-amber-400/10 to-orange-400/5 p-8 sm:p-12">
           <div className="flex flex-col items-center text-center">
             <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/20">
@@ -103,11 +106,15 @@ export function AdminDashboardPage() {
       <AdminSidebar active={section} onChange={setSection} />
 
       <div className="space-y-6">
-        <SectionTitle
-          eyebrow="Panel de Control"
-          title="Administración de FITGEAR"
-          description="Gestiona catálogo, órdenes, usuarios y operaciones del e-commerce en tiempo real."
-        />
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Panel de control</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">
+            Administracion de FITGEAR
+          </h1>
+          <p className="mt-3 max-w-2xl text-slate-400">
+            Gestiona catalogo, ordenes, usuarios y operaciones del e-commerce en tiempo real.
+          </p>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard label="Productos" value={`${products.length}`} trend="En el catálogo" />

@@ -30,17 +30,22 @@ export function DeleteConfirmModal({ isOpen, productName, onClose, onConfirm }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl shadow-black/20">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Eliminar producto</p>
-        <h3 className="mt-2 text-2xl font-black text-slate-900">Confirmar accion</h3>
-        <p className="mt-3 text-sm text-slate-600">
-          Vas a eliminar <span className="font-semibold text-slate-900">{productName}</span> de forma
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-white/[0.08] bg-slate-900 p-6 shadow-2xl shadow-black/50">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-300">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-9 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-rose-400">Eliminar producto</p>
+        <h3 className="mt-2 text-2xl font-bold tracking-tight text-white">Confirmar accion</h3>
+        <p className="mt-3 text-sm text-slate-400">
+          Vas a eliminar <span className="font-semibold text-white">{productName}</span> de forma
           permanente.
         </p>
 
         {error ? (
-          <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {error}
           </p>
         ) : null}
@@ -49,7 +54,7 @@ export function DeleteConfirmModal({ isOpen, productName, onClose, onConfirm }: 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-gray-50"
+            className="rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:bg-white/5"
           >
             Cancelar
           </button>
@@ -57,7 +62,7 @@ export function DeleteConfirmModal({ isOpen, productName, onClose, onConfirm }: 
             type="button"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="rounded-full bg-rose-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-full bg-rose-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? 'Eliminando...' : 'Eliminar'}
           </button>

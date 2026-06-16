@@ -185,28 +185,28 @@ export function AdminInventorySection({ products, onRefreshProducts }: AdminInve
       />
 
       {categoriesLoading ? (
-        <p className="text-sm text-slate-500">Cargando categorias para el inventario...</p>
+        <p className="text-sm text-slate-400">Cargando categorias para el inventario...</p>
       ) : null}
 
       {categoriesError ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {categoriesError}
         </p>
       ) : null}
 
       {successMessage ? (
-        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <p className="rounded-2xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-300">
           {successMessage}
         </p>
       ) : null}
 
       {mutationError ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <p className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {mutationError}
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between text-sm text-slate-500">
+      <div className="flex items-center justify-between text-sm text-slate-400">
         <span>{filteredProducts.length} productos encontrados</span>
         {categoryNameById.size > 0 ? <span>{categoryNameById.size} categorias disponibles</span> : null}
       </div>

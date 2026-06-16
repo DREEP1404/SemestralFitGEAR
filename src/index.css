@@ -1,19 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --fitgear-green-50: #f3fff2;
-  --fitgear-green-100: #dcffd8;
-  --fitgear-green-300: #95f08e;
-  --fitgear-green-500: #59d64f;
-  --fitgear-green-700: #248b22;
-  --fitgear-gray-100: #f3f4f6;
-  --fitgear-gray-200: #e5e7eb;
-  --fitgear-gray-500: #6b7280;
-  --fitgear-gray-900: #111827;
+  /* Brand accent — lime */
+  --fg-accent: #a3e635;
+  --fg-accent-hover: #bef264;
+  --fg-accent-dark: #4d7c0f;
+  --fg-accent-glow: rgba(163, 230, 53, 0.28);
 
-  font-family: "Rajdhani", "Segoe UI", Tahoma, sans-serif;
-  color: #111827;
-  background: #ffffff;
+  /* Dark surfaces */
+  --fg-black: #020617;
+  --fg-dark: #0f172a;
+  --fg-dark-card: #1e293b;
+  --fg-dark-border: rgba(255, 255, 255, 0.08);
+
+  /* Light surfaces */
+  --fg-white: #ffffff;
+  --fg-surface: #f8fafc;
+  --fg-surface-2: #f1f5f9;
+
+  /* Text */
+  --fg-text: #0f172a;
+  --fg-muted: #64748b;
+  --fg-light: #f1f5f9;
+  --fg-lighter: #cbd5e1;
+
+  /* Borders */
+  --fg-border: #e2e8f0;
+
+  /* Typography */
+  --fg-font-body: "Inter", "Segoe UI", Tahoma, sans-serif;
+  --fg-font-display: "Rajdhani", "Inter", "Segoe UI", sans-serif;
+
+  font-family: var(--fg-font-body);
+  color: var(--fg-text);
+  background: var(--fg-black);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -23,14 +43,67 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 10% 0%, var(--fitgear-green-50), transparent 45%),
-    linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+  /* Dark base so full-bleed sections never flash white during load. */
+  background: var(--fg-black);
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* Athletic, condensed display face for headings and the wordmark. */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--fg-font-display);
+  letter-spacing: 0.01em;
+}
+
+/* Tighter, weightier feel for big display headings. */
+h1 {
+  letter-spacing: -0.01em;
+}
+
+/* Focus ring that reads on both light and dark surfaces. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--fg-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Slim, on-brand scrollbar (WebKit). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+  background-clip: padding-box;
+}
+
+::selection {
+  background: var(--fg-accent);
+  color: #0f172a;
 }

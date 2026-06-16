@@ -1,5 +1,4 @@
 import { OrderCard } from '../components/orders/OrderCard'
-import { SectionTitle } from '../components/SectionTitle'
 import { useAuth } from '../context/AuthContext'
 import { useMyOrdersQuery } from '../hooks/useOrdersQueries'
 
@@ -23,32 +22,49 @@ export function OrdersPage() {
   const orders = ordersQuery.data ?? []
 
   return (
-    <section className="space-y-6">
-      <SectionTitle
-        eyebrow="Mis ordenes"
-        title="Historial de compras"
-        description="Consulta el estado de cada pedido y revisa el detalle de productos comprados."
-      />
+    <section className="space-y-8">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Mis ordenes</p>
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Historial de compras</h1>
+        <p className="mt-3 max-w-2xl text-slate-400">
+          Consulta el estado de cada pedido y revisa el detalle de productos comprados.
+        </p>
+      </div>
 
       {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600 shadow-sm">
-          Cargando tus ordenes...
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-32 animate-pulse rounded-2xl border border-white/[0.06] bg-slate-900"
+            />
+          ))}
         </div>
       ) : null}
 
       {!loading && error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-5 text-sm text-rose-300">
           {error}
         </div>
       ) : null}
 
       {!loading && !error && orders.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600 shadow-sm">
-          No tienes ordenes aun.
+        <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/[0.08] bg-slate-900/60 px-6 py-16 text-center">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04] text-slate-500">
+            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-bold text-white">Sin pedidos aun</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Cuando completes una compra, tus pedidos apareceran aqui.
+            </p>
+          </div>
         </div>
       ) : null}
 
-      {!loading && !error ? (
+      {!loading && !error && orders.length > 0 ? (
         <div className="space-y-4">
           {orders.map((order) => (
             <OrderCard key={order.id} order={order} />

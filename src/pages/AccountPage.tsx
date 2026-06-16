@@ -1,26 +1,27 @@
 import { UserProfile } from '@clerk/clerk-react'
-import { SectionTitle } from '../components/SectionTitle'
 
 export function AccountPage() {
   return (
     <section className="space-y-6">
-      <SectionTitle
-        eyebrow="Cuenta personal"
-        title="Perfil y seguridad"
-        description="Gestiona tu información personal, seguridad y preferencias de sesión en FITGEAR."
-      />
-      
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Cuenta personal</p>
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Perfil y seguridad</h1>
+        <p className="mt-3 max-w-2xl text-slate-400">
+          Gestiona tu informacion personal, seguridad y preferencias de sesion en FITGEAR.
+        </p>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Sidebar con información rápida */}
         <div className="space-y-4 lg:col-span-1">
           <div className="rounded-3xl border border-lime-400/30 bg-gradient-to-br from-lime-400/10 to-emerald-400/5 p-6">
             <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-lime-400/20">
-              <svg className="h-6 w-6 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-6 w-6 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-lime-600">
-              Información de tu cuenta
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-lime-400">
+              Informacion de tu cuenta
             </h3>
             <p className="mt-3 text-xs text-slate-500">
               Todos tus datos están seguros y encriptados. Usa los campos abajo para actualizar tu información personal.

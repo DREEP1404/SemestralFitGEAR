@@ -16,6 +16,9 @@ interface InventoryFiltersProps {
   onCreateClick: () => void
 }
 
+const fieldClass =
+  'w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200 outline-none transition focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/30 placeholder:text-slate-500'
+
 export function InventoryFilters({
   search,
   categoryId,
@@ -29,14 +32,12 @@ export function InventoryFilters({
   onCreateClick,
 }: InventoryFiltersProps) {
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm shadow-black/5">
+    <section className="rounded-3xl border border-white/[0.08] bg-slate-900 p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-lime-600">
-            Inventario
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-slate-900">Gestion de productos</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-lime-400">Inventario</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">Gestion de productos</h2>
+          <p className="mt-1 text-sm text-slate-400">
             Busca, filtra y administra el catalogo desde un solo lugar.
           </p>
         </div>
@@ -44,8 +45,11 @@ export function InventoryFilters({
         <button
           type="button"
           onClick={onCreateClick}
-          className="inline-flex items-center justify-center rounded-full bg-lime-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-lime-400"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-lime-400 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_24px_-6px_rgba(163,230,53,0.6)]"
         >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
           Agregar producto
         </button>
       </div>
@@ -55,13 +59,13 @@ export function InventoryFilters({
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Buscar por nombre..."
-          className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:border-lime-400"
+          className={fieldClass}
         />
 
         <select
           value={categoryId}
           onChange={(event) => onCategoryChange(event.target.value)}
-          className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none focus:border-lime-400"
+          className={fieldClass}
         >
           <option value="all">Todas las categorias</option>
           {categories.map((category) => (
@@ -74,7 +78,7 @@ export function InventoryFilters({
         <select
           value={status}
           onChange={(event) => onStatusChange(event.target.value as 'all' | 'active' | 'inactive')}
-          className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none focus:border-lime-400"
+          className={fieldClass}
         >
           <option value="all">Todos los estados</option>
           <option value="active">Activos</option>
@@ -88,7 +92,7 @@ export function InventoryFilters({
               event.target.value as 'nameAsc' | 'priceAsc' | 'priceDesc' | 'stockAsc' | 'stockDesc',
             )
           }
-          className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none focus:border-lime-400"
+          className={fieldClass}
         >
           <option value="nameAsc">Nombre A-Z</option>
           <option value="priceAsc">Precio: menor a mayor</option>

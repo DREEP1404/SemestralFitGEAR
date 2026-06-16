@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
-type ButtonVariant = 'primary' | 'secondary'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
@@ -13,6 +13,9 @@ const VARIANT_CLASSNAME: Record<ButtonVariant, string> = {
     'bg-lime-400 text-slate-900 hover:bg-lime-300 focus-visible:ring-lime-300/70',
   secondary:
     'border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-slate-300/70',
+  // Outline button tuned for dark surfaces.
+  ghost:
+    'border border-white/15 bg-transparent text-white hover:border-white/30 hover:bg-white/5 focus-visible:ring-white/30',
 }
 
 interface ButtonClassOptions {
