@@ -6,7 +6,7 @@ import { AdminInventorySection } from '../components/admin/AdminInventorySection
 import { SummaryCard } from '../components/SummaryCard'
 import { useAuth } from '../context/AuthContext'
 import type { BackendOrder, BackendUser, Product } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatDate } from '../utils/format'
 
 type AdminSection = 'overview' | 'inventory' | 'orders' | 'users'
 
@@ -173,6 +173,7 @@ export function AdminDashboardPage() {
                     <th className="pb-2">Nombre</th>
                     <th className="pb-2">Email</th>
                     <th className="pb-2">Rol</th>
+                    <th className="pb-2">Fecha de registro</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,6 +182,7 @@ export function AdminDashboardPage() {
                       <td className="py-2">{user.fullName}</td>
                       <td>{user.email}</td>
                       <td className="capitalize">{user.role.toLowerCase()}</td>
+                      <td>{formatDate(user.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
