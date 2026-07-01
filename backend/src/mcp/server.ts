@@ -29,14 +29,11 @@ for (const tool of allTools) {
   server.tool(tool.name, tool.description, tool.schema, tool.handler as Parameters<typeof server.tool>[3])
 }
 
-async function main() {
+try {
   await connectDatabase()
-
   const transport = new StdioServerTransport()
   await server.connect(transport)
-}
-
-main().catch((err) => {
+} catch (err) {
   console.error('MCP server failed to start:', err)
   process.exit(1)
-})
+}
