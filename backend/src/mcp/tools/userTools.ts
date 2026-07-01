@@ -1,14 +1,7 @@
 import { z } from 'zod'
-import { listUsers, getUserById } from '../../services/userService'
-import { McpAuthError, requireMcpAuth } from '../auth'
-import { HttpError } from '../../utils/httpError'
-
-function errorText(err: unknown): string {
-  if (err instanceof McpAuthError) return err.message
-  if (err instanceof HttpError) return `Error ${err.statusCode}: ${err.message}`
-  if (err instanceof Error) return err.message
-  return 'Unknown error'
-}
+import { getUserById, listUsers } from '../../services/userService'
+import { requireMcpAuth } from '../auth'
+import { toolError } from '../toolError'
 
 export const userToolDefs = [
   {
@@ -23,7 +16,7 @@ export const userToolDefs = [
         const users = await listUsers()
         return { content: [{ type: 'text' as const, text: JSON.stringify(users, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },
@@ -40,7 +33,7 @@ export const userToolDefs = [
         const user = await getUserById(params.id)
         return { content: [{ type: 'text' as const, text: JSON.stringify(user, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },

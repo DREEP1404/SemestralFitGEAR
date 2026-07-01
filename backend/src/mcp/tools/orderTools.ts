@@ -1,14 +1,12 @@
 import { z } from 'zod'
-import { listOrders, getOrderById, listOrdersByUserId, createOrder } from '../../services/orderService'
-import { McpAuthError, requireMcpAuth } from '../auth'
-import { HttpError } from '../../utils/httpError'
-
-function errorText(err: unknown): string {
-  if (err instanceof McpAuthError) return err.message
-  if (err instanceof HttpError) return `Error ${err.statusCode}: ${err.message}`
-  if (err instanceof Error) return err.message
-  return 'Unknown error'
-}
+import {
+  createOrder,
+  getOrderById,
+  listOrders,
+  listOrdersByUserId,
+} from '../../services/orderService'
+import { requireMcpAuth } from '../auth'
+import { toolError } from '../toolError'
 
 export const orderToolDefs = [
   {
@@ -23,7 +21,7 @@ export const orderToolDefs = [
         const orders = await listOrders()
         return { content: [{ type: 'text' as const, text: JSON.stringify(orders, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },
@@ -40,7 +38,7 @@ export const orderToolDefs = [
         const order = await getOrderById(params.id)
         return { content: [{ type: 'text' as const, text: JSON.stringify(order, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },
@@ -57,7 +55,7 @@ export const orderToolDefs = [
         const orders = await listOrdersByUserId(params.userId)
         return { content: [{ type: 'text' as const, text: JSON.stringify(orders, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },
@@ -84,7 +82,7 @@ export const orderToolDefs = [
         const order = await createOrder({ userId: params.userId, items: params.items })
         return { content: [{ type: 'text' as const, text: JSON.stringify(order, null, 2) }] }
       } catch (err) {
-        return { content: [{ type: 'text' as const, text: errorText(err) }], isError: true }
+        return { content: [{ type: 'text' as const, text: toolError(err) }], isError: true }
       }
     },
   },
