@@ -19,7 +19,7 @@ interface CartContextValue {
   taxAmount: number
   shippingAmount: number
   total: number
-  addItem: (product: Product) => void
+  addItem: (product: Product, quantity?: number) => void
   removeItem: (productId: string) => void
   increase: (productId: string) => void
   decrease: (productId: string) => void
@@ -34,7 +34,7 @@ function roundCurrency(value: number) {
 }
 
 type CartAction =
-  | { type: 'add'; product: Product }
+  | { type: 'add'; product: Product; quantity: number }
   | { type: 'remove'; productId: string }
   | { type: 'increase'; productId: string }
   | { type: 'decrease'; productId: string }
@@ -47,11 +47,11 @@ function cartReducer(state: CartItemModel[], action: CartAction): CartItemModel[
       if (existing) {
         return state.map((item) =>
           item.product.id === action.product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + action.quantity }
             : item,
         )
       }
-      return [...state, { product: action.product, quantity: 1 }]
+      return [...state, { product: action.product, quantity: action.quantity }]
     }
     case 'remove':
       return state.filter((item) => item.product.id !== action.productId)
@@ -84,7 +84,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const items = useMemo(() => state as CartLine[], [state])
 
   const subtotal = useMemo(
-    () => items.reduce((acc, line) => acc + line.product.price * line.quantity, 0),
+    () =>
+      items.reduce((acc, line) => {
+        const unitPrice = line.product.hasDiscount ? line.product.finalPrice : line.product.price
+        return acc + unitPrice * line.quantity
+      }, 0),
     [items],
   )
 
@@ -98,8 +102,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [subtotal, taxAmount, shippingAmount],
   )
 
-  const addItem = useCallback((product: Product) => {
-    dispatch({ type: 'add', product })
+  const addItem = useCallback((product: Product, quantity = 1) => {
+    dispatch({ type: 'add', product, quantity })
   }, [])
 
   const removeItem = useCallback((productId: string) => {

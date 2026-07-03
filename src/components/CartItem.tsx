@@ -12,7 +12,8 @@ interface CartItemProps {
 }
 
 export function CartItem({ product, quantity, onIncrease, onDecrease, onRemove }: CartItemProps) {
-  const subtotal = quantity * product.price
+  const unitPrice = product.hasDiscount ? product.finalPrice : product.price
+  const subtotal = quantity * unitPrice
 
   return (
     <motion.article
@@ -37,7 +38,14 @@ export function CartItem({ product, quantity, onIncrease, onDecrease, onRemove }
             {product.name}
           </h3>
         </Link>
-        <p className="mt-1.5 text-sm text-slate-400">{formatCurrency(product.price)} c/u</p>
+        <p className="mt-1.5 text-sm text-slate-400">
+          {formatCurrency(unitPrice)} c/u
+          {product.hasDiscount ? (
+            <span className="ml-1.5 text-slate-500 line-through">
+              {formatCurrency(product.price)}
+            </span>
+          ) : null}
+        </p>
         <p className="mt-0.5 text-sm font-semibold text-white">
           Subtotal: {formatCurrency(subtotal)}
         </p>
