@@ -20,6 +20,12 @@ export function ProductDetailPage() {
   const [related, setRelated] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [quantity, setQuantity] = useState(1)
+
+  // A different product was opened — start its quantity picker back at 1.
+  useEffect(() => {
+    setQuantity(1)
+  }, [id])
 
   useEffect(() => {
     if (!id) {
@@ -139,10 +145,24 @@ export function ProductDetailPage() {
             <p className="leading-relaxed text-slate-400">{product.description}</p>
           </div>
 
-          <div className="flex items-end gap-4">
-            <p className="text-4xl font-bold tracking-tight text-white">
-              {formatCurrency(product.price)}
-            </p>
+          <div className="flex flex-wrap items-end gap-4">
+            {product.hasDiscount ? (
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+                <p className="text-4xl font-bold tracking-tight text-white">
+                  {formatCurrency(product.finalPrice)}
+                </p>
+                <p className="mb-1 text-lg text-slate-500 line-through">
+                  {formatCurrency(product.price)}
+                </p>
+                <span className="mb-1 rounded-full bg-rose-500/15 px-2.5 py-1 text-xs font-bold text-rose-300 ring-1 ring-rose-400/30">
+                  -{product.discountPercentage}%
+                </span>
+              </div>
+            ) : (
+              <p className="text-4xl font-bold tracking-tight text-white">
+                {formatCurrency(product.price)}
+              </p>
+            )}
             {outOfStock ? (
               <span className="mb-1 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-400 ring-1 ring-white/10">
                 Agotado
@@ -155,19 +175,51 @@ export function ProductDetailPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => addItem(product)}
-            disabled={outOfStock}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-7 py-4 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_32px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none sm:w-auto"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="10" cy="20" r="1" fill="currentColor" />
-              <circle cx="18" cy="20" r="1" fill="currentColor" />
-            </svg>
-            {outOfStock ? 'Sin stock' : 'Agregar al carrito'}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {!outOfStock ? (
+              <div className="inline-flex items-center rounded-full border border-white/12 bg-slate-950/40">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                  disabled={quantity <= 1}
+                  aria-label="Disminuir cantidad"
+                  className="inline-flex h-12 w-11 items-center justify-center text-white transition hover:text-lime-400 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <span className="w-8 text-center text-sm font-bold text-white" aria-live="polite">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((current) => Math.min(product.stock, current + 1))}
+                  disabled={quantity >= product.stock}
+                  aria-label="Aumentar cantidad"
+                  className="inline-flex h-12 w-11 items-center justify-center text-white transition hover:text-lime-400 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => addItem(product, quantity)}
+              disabled={outOfStock}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-lime-400 px-7 py-4 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_32px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none sm:flex-none"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="10" cy="20" r="1" fill="currentColor" />
+                <circle cx="18" cy="20" r="1" fill="currentColor" />
+              </svg>
+              {outOfStock ? 'Sin stock' : 'Agregar al carrito'}
+            </button>
+          </div>
 
           <ul className="grid gap-3 border-t border-white/[0.07] pt-6">
             {trustPoints.map((point) => (

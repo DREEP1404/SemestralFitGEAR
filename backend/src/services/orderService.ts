@@ -205,7 +205,7 @@ async function persistOrder(payload: CreateOrderPayload, session?: ClientSession
       ])
     }
 
-    const unitPrice = product.price
+    const unitPrice = product.hasDiscount ? product.finalPrice : product.price
     const subtotal = unitPrice * item.quantity
 
     return {
