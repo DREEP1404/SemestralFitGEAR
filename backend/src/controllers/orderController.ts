@@ -22,7 +22,7 @@ export const getOrdersByUser = async (c: Context<AppEnv>) => {
 export const createOrderController = async (c: Context<AppEnv>) => {
   const payload = c.get('validatedBody') as {
     userId: string
-    items: Array<{ productId: string; quantity: number }>
+    items: Array<{ productId: string; quantity: number; size?: string }>
   }
   const order = await createOrder(payload)
   return c.json(order, 201)
