@@ -1,60 +1,67 @@
-import type { Request, Response, NextFunction } from 'express'
+import type { Context, Next } from 'hono'
 import type { ZodType } from 'zod'
+import type { AppEnv } from '../app'
 import { HttpError } from '../utils/httpError'
 import { isLocalProductUploadPath, removeLocalUploadFile } from '../utils/uploadPaths'
 
 export function validateBody<T>(schema: ZodType<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body)
+  return async (c: Context<AppEnv>, next: Next) => {
+    // File upload middleware may have already parsed the body into pendingBody
+    const raw = c.get('pendingBody') ?? (await c.req.json().catch(() => ({})))
+    const result = schema.safeParse(raw)
 
     if (!result.success) {
-      const uploadedImagePath = req.body?.imageUrl
-      if (typeof uploadedImagePath === 'string' && isLocalProductUploadPath(uploadedImagePath)) {
-        void removeLocalUploadFile(uploadedImagePath)
+      const newlyUploadedImagePaths = (raw as Record<string, unknown>)?.newlyUploadedImagePaths
+      if (Array.isArray(newlyUploadedImagePaths)) {
+        for (const uploadedImagePath of newlyUploadedImagePaths) {
+          if (typeof uploadedImagePath === 'string' && isLocalProductUploadPath(uploadedImagePath)) {
+            void removeLocalUploadFile(uploadedImagePath)
+          }
+        }
       }
 
       const issues = result.error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
       }))
-      return next(new HttpError(400, 'Validation failed', issues))
+      throw new HttpError(400, 'Validation failed', issues)
     }
 
-    res.locals.validatedBody = result.data
-    return next()
+    c.set('validatedBody', result.data)
+    await next()
   }
 }
 
 export function validateParams<T>(schema: ZodType<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.params)
+  return async (c: Context<AppEnv>, next: Next) => {
+    const result = schema.safeParse(c.req.param())
 
     if (!result.success) {
       const issues = result.error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
       }))
-      return next(new HttpError(400, 'Validation failed', issues))
+      throw new HttpError(400, 'Validation failed', issues)
     }
 
-    res.locals.validatedParams = result.data
-    return next()
+    c.set('validatedParams', result.data)
+    await next()
   }
 }
 
 export function validateQuery<T>(schema: ZodType<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.query)
+  return async (c: Context<AppEnv>, next: Next) => {
+    const result = schema.safeParse(c.req.query())
 
     if (!result.success) {
       const issues = result.error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
       }))
-      return next(new HttpError(400, 'Validation failed', issues))
+      throw new HttpError(400, 'Validation failed', issues)
     }
 
-    res.locals.validatedQuery = result.data
-    return next()
+    c.set('validatedQuery', result.data)
+    await next()
   }
 }

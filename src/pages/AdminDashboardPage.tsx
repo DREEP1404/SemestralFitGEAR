@@ -2,16 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getOrders, getProducts, getUsers } from '../api/fitgearApi'
 import { AdminSidebar } from '../components/AdminSidebar'
+import { AdminCategoriesSection } from '../components/admin/AdminCategoriesSection'
 import { AdminInventorySection } from '../components/admin/AdminInventorySection'
 import { SummaryCard } from '../components/SummaryCard'
 import { useAuth } from '../context/AuthContext'
 import type { BackendOrder, BackendUser, Product } from '../types'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatDate } from '../utils/format'
 
-type AdminSection = 'overview' | 'inventory' | 'orders' | 'users'
+type AdminSection = 'overview' | 'inventory' | 'categories' | 'orders' | 'users'
+
+// Órdenes que representan dinero cobrado — excluye PENDING (intención no pagada) y
+// CANCELLED (nunca se pagó) para que "revenue acumulado" refleje ventas reales.
+const REVENUE_STATUSES = new Set<BackendOrder['status']>(['PAID', 'SHIPPED', 'DELIVERED'])
+
+const ORDER_STATUS_FILTERS = ['ALL', 'PENDING', 'PAID', 'SHIPPED'] as const
+type OrderStatusFilter = (typeof ORDER_STATUS_FILTERS)[number]
 
 export function AdminDashboardPage() {
   const [section, setSection] = useState<AdminSection>('overview')
+  const [orderStatusFilter, setOrderStatusFilter] = useState<OrderStatusFilter>('ALL')
   const { isAdmin } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<BackendOrder[]>([])
@@ -27,7 +36,7 @@ export function AdminDashboardPage() {
     let active = true
     setLoading(true)
 
-    Promise.all([getProducts(), getOrders(), getUsers()])
+    Promise.all([getProducts({ includeInactive: true }), getOrders(), getUsers()])
       .then(([productsData, ordersData, usersData]) => {
         if (!active) {
           return
@@ -55,13 +64,29 @@ export function AdminDashboardPage() {
   }, [isAdmin])
 
   const totalRevenue = useMemo(
-    () => orders.reduce((acc, order) => acc + order.totalAmount, 0),
+    () =>
+      orders
+        .filter((order) => REVENUE_STATUSES.has(order.status))
+        .reduce((acc, order) => acc + order.totalAmount, 0),
     [orders],
+  )
+
+  const activeProductsCount = useMemo(
+    () => products.filter((product) => product.isActive).length,
+    [products],
+  )
+
+  const filteredOrders = useMemo(
+    () =>
+      orderStatusFilter === 'ALL'
+        ? orders
+        : orders.filter((order) => order.status === orderStatusFilter),
+    [orders, orderStatusFilter],
   )
 
   const refreshProducts = async () => {
     const [productsData, ordersData, usersData] = await Promise.all([
-      getProducts(),
+      getProducts({ includeInactive: true }),
       getOrders(),
       getUsers(),
     ])
@@ -117,7 +142,7 @@ export function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Productos" value={`${products.length}`} trend="En el catálogo" />
+          <SummaryCard label="Productos" value={`${activeProductsCount}`} trend="Activos en el catálogo" />
           <SummaryCard label="Órdenes" value={`${orders.length}`} trend="En procesamiento" />
           <SummaryCard label="Usuarios" value={`${users.length}`} trend="Registrados" />
           <SummaryCard label="Ingresos" value={formatCurrency(totalRevenue)} trend="Total de ventas" />
@@ -135,28 +160,57 @@ export function AdminDashboardPage() {
           <AdminInventorySection products={products} onRefreshProducts={refreshProducts} />
         ) : null}
 
+        {section === 'categories' ? <AdminCategoriesSection /> : null}
+
         {(section === 'overview' || section === 'orders') && (
           <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Órdenes recientes</h3>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-white">Órdenes recientes</h3>
+              <div className="flex flex-wrap gap-2">
+                {ORDER_STATUS_FILTERS.map((statusFilter) => (
+                  <button
+                    key={statusFilter}
+                    type="button"
+                    onClick={() => setOrderStatusFilter(statusFilter)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      orderStatusFilter === statusFilter
+                        ? 'bg-lime-400 text-slate-950'
+                        : 'border border-white/12 text-slate-300 hover:border-white/30 hover:bg-white/5'
+                    }`}
+                  >
+                    {statusFilter === 'ALL' ? 'Todos' : statusFilter}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-140 text-left text-sm text-slate-300">
                 <thead className="text-slate-400">
                   <tr>
                     <th className="pb-2">ID</th>
+                    <th className="pb-2">Fecha</th>
                     <th className="pb-2">Cliente</th>
                     <th className="pb-2">Estado</th>
                     <th className="pb-2">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <tr key={order.id} className="border-t border-white/10">
                       <td className="py-2">{order.id}</td>
+                      <td>{formatDate(order.createdAt)}</td>
                       <td>{order.customerName ?? order.userId}</td>
                       <td className="capitalize">{order.status.toLowerCase()}</td>
                       <td>{formatCurrency(order.totalAmount)}</td>
                     </tr>
                   ))}
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-slate-400">
+                        No hay órdenes con este estado.
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -173,6 +227,7 @@ export function AdminDashboardPage() {
                     <th className="pb-2">Nombre</th>
                     <th className="pb-2">Email</th>
                     <th className="pb-2">Rol</th>
+                    <th className="pb-2">Fecha de registro</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,6 +236,7 @@ export function AdminDashboardPage() {
                       <td className="py-2">{user.fullName}</td>
                       <td>{user.email}</td>
                       <td className="capitalize">{user.role.toLowerCase()}</td>
+                      <td>{formatDate(user.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

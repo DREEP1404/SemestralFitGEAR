@@ -14,16 +14,18 @@ interface CheckoutSessionResult {
 
 interface PopulatedProductRef {
   name?: string
-  imageUrl?: string
+  images?: string[]
 }
 
 interface PopulatedOrderUserRef {
   email?: string
+  role?: string
 }
 
 interface GroupedOrderItem {
   productId: string
   quantity: number
+  size?: string
 }
 
 const TAX_RATE = 0.07
@@ -79,11 +81,15 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
     throw new HttpError(400, 'Order is already paid')
   }
 
+  if (order.status === 'CANCELLED') {
+    throw new HttpError(400, 'Order is cancelled and cannot be paid')
+  }
+
   await ensureOrderHasAvailableStock(order._id.toString())
 
   const items = await OrderItemModel.find({ orderId: order._id }).populate(
     'productId',
-    'name imageUrl isActive',
+    'name images isActive',
   )
 
   if (!items.length) {
@@ -97,9 +103,12 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
         ? `Producto ${item.productId}`
         : productRef?.name ?? 'Producto FITGEAR'
 
-    const imageUrl = toAbsoluteImageUrl(
-      typeof item.productId === 'string' ? undefined : productRef?.imageUrl,
-    )
+    const images =
+      typeof item.productId === 'string'
+        ? []
+        : (productRef?.images ?? [])
+            .map((image) => toAbsoluteImageUrl(image))
+            .filter((image): image is string => Boolean(image))
 
     return {
       quantity: item.quantity,
@@ -108,7 +117,7 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
         unit_amount: toStripeUnitAmount(item.unitPrice),
         product_data: {
           name,
-          images: imageUrl ? [imageUrl] : undefined,
+          images: images.length > 0 ? images : undefined,
         },
       },
     }
@@ -126,6 +135,7 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
         unit_amount: toStripeUnitAmount(taxAmount),
         product_data: {
           name: `Impuesto (${Math.round(TAX_RATE * 100)}%)`,
+          images: undefined,
         },
       },
     })
@@ -139,6 +149,7 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
         unit_amount: toStripeUnitAmount(shippingAmount),
         product_data: {
           name: 'Envío',
+          images: undefined,
         },
       },
     })
@@ -213,20 +224,25 @@ export async function confirmCheckoutPayment(orderId: string, sessionId?: string
   return { status: 'PAID' as const }
 }
 
-export function constructWebhookEvent(payload: Buffer, signature: string | undefined) {
+export async function constructWebhookEvent(payload: string, signature: string | undefined) {
   if (!signature) {
+    console.error('[stripe-webhook] rejected event: missing Stripe signature header')
     throw new HttpError(400, 'Missing Stripe signature header')
   }
 
   if (!env.stripeWebhookSecret) {
+    console.error('[stripe-webhook] rejected event: STRIPE_WEBHOOK_SECRET is not configured')
     throw new HttpError(500, 'Stripe webhook is not configured')
   }
 
   const stripe = getStripeClient()
 
   try {
-    return stripe.webhooks.constructEvent(payload, signature, env.stripeWebhookSecret)
-  } catch {
+    // constructEventAsync (not the sync constructEvent): under Bun the Stripe SDK
+    // uses the Web Crypto provider, whose HMAC only works asynchronously.
+    return await stripe.webhooks.constructEventAsync(payload, signature, env.stripeWebhookSecret)
+  } catch (error) {
+    console.error('[stripe-webhook] signature verification failed', error)
     throw new HttpError(400, 'Invalid Stripe signature')
   }
 }
@@ -256,24 +272,41 @@ export async function handleStripeEvent(event: Stripe.Event) {
       return
     }
 
+    console.error('[stripe-webhook] failed to process checkout.session.completed', {
+      eventId: event.id,
+      orderId,
+      error,
+    })
+
     throw error
   }
 }
 
-function groupOrderItems(items: Array<{ productId: Types.ObjectId | string; quantity: number }>) {
-  const grouped = new Map<string, number>()
+function groupOrderItems(
+  items: Array<{ productId: Types.ObjectId | string; quantity: number; size?: string | null }>,
+) {
+  // Group by product + size so the same product in two different sizes is
+  // tracked (and stock-checked) as two independent buckets.
+  const grouped = new Map<string, GroupedOrderItem>()
 
   for (const item of items) {
     const productId =
       typeof item.productId === 'string' ? item.productId : item.productId.toString()
-    grouped.set(productId, (grouped.get(productId) ?? 0) + item.quantity)
+    const size = item.size ?? undefined
+    const key = `${productId}::${size ?? ''}`
+    const existing = grouped.get(key)
+    if (existing) {
+      existing.quantity += item.quantity
+    } else {
+      grouped.set(key, { productId, quantity: item.quantity, size })
+    }
   }
 
-  return Array.from(grouped.entries()).map(([productId, quantity]) => ({ productId, quantity }))
+  return Array.from(grouped.values())
 }
 
 async function loadOrderItems(orderId: string, session?: ClientSession) {
-  const itemsQuery = OrderItemModel.find({ orderId }).select('productId quantity')
+  const itemsQuery = OrderItemModel.find({ orderId }).select('productId quantity size')
   return session ? itemsQuery.session(session) : itemsQuery
 }
 
@@ -284,11 +317,14 @@ async function ensureOrderHasAvailableStock(orderId: string, session?: ClientSes
     throw new HttpError(400, 'Order has no items')
   }
 
-  const productIds = groupedItems.map((item) => new Types.ObjectId(item.productId))
-  const productsQuery = ProductModel.find({ _id: { $in: productIds } }).select('name stock isActive')
+  const uniqueProductIds = [...new Set(groupedItems.map((item) => item.productId))]
+  const productIds = uniqueProductIds.map((productId) => new Types.ObjectId(productId))
+  const productsQuery = ProductModel.find({ _id: { $in: productIds } }).select(
+    'name stock isActive sizes',
+  )
   const products = session ? await productsQuery.session(session) : await productsQuery
 
-  if (products.length !== groupedItems.length) {
+  if (products.length !== uniqueProductIds.length) {
     throw new HttpError(404, 'Product not found')
   }
 
@@ -304,12 +340,49 @@ async function ensureOrderHasAvailableStock(orderId: string, session?: ClientSes
       throw new HttpError(400, 'Order has inactive products and cannot be paid')
     }
 
-    if (product.stock < item.quantity) {
-      throw new HttpError(409, `Insufficient stock for ${product.name}. Available: ${product.stock}`)
+    const availableStock = item.size
+      ? (product.sizes.find((size) => size.label === item.size)?.stock ?? 0)
+      : product.stock
+
+    if (availableStock < item.quantity) {
+      throw new HttpError(409, `Insufficient stock for ${product.name}. Available: ${availableStock}`)
     }
   }
 
   return groupedItems
+}
+
+// Single-item stock update, shared by the transactional path and the
+// non-replica-set fallback below — keeps the sized/non-sized branching in
+// one place instead of drifting between two copies.
+function decrementProductStock(item: GroupedOrderItem, session?: ClientSession) {
+  const updateQuery = item.size
+    ? ProductModel.findOneAndUpdate(
+        {
+          _id: item.productId,
+          isActive: true,
+          sizes: { $elemMatch: { label: item.size, stock: { $gte: item.quantity } } },
+        },
+        { $inc: { 'sizes.$[elem].stock': -item.quantity, stock: -item.quantity } },
+        { arrayFilters: [{ 'elem.label': item.size }], new: true },
+      )
+    : ProductModel.findOneAndUpdate(
+        { _id: item.productId, isActive: true, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true },
+      )
+
+  return session ? updateQuery.session(session) : updateQuery
+}
+
+function restoreProductStock(item: GroupedOrderItem) {
+  return item.size
+    ? ProductModel.findByIdAndUpdate(
+        item.productId,
+        { $inc: { 'sizes.$[elem].stock': item.quantity, stock: item.quantity } },
+        { arrayFilters: [{ 'elem.label': item.size }] },
+      )
+    : ProductModel.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } })
 }
 
 async function applyStockDecrement(
@@ -317,21 +390,7 @@ async function applyStockDecrement(
   session?: ClientSession,
 ) {
   for (const item of groupedItems) {
-    const updateQuery = ProductModel.findOneAndUpdate(
-      {
-        _id: item.productId,
-        isActive: true,
-        stock: { $gte: item.quantity },
-      },
-      {
-        $inc: { stock: -item.quantity },
-      },
-      {
-        new: true,
-      },
-    )
-
-    const updated = session ? await updateQuery.session(session) : await updateQuery
+    const updated = await decrementProductStock(item, session)
 
     if (!updated) {
       throw new HttpError(409, 'Stock update conflict. Try again with refreshed inventory.')
@@ -419,19 +478,7 @@ async function markOrderAsPaidAndDeductStockFallback(
 
   try {
     for (const item of groupedItems) {
-      const updated = await ProductModel.findOneAndUpdate(
-        {
-          _id: item.productId,
-          isActive: true,
-          stock: { $gte: item.quantity },
-        },
-        {
-          $inc: { stock: -item.quantity },
-        },
-        {
-          new: true,
-        },
-      )
+      const updated = await decrementProductStock(item)
 
       if (!updated) {
         throw new HttpError(409, 'Stock update conflict. Try again with refreshed inventory.')
@@ -448,9 +495,7 @@ async function markOrderAsPaidAndDeductStockFallback(
     await order.save()
   } catch (error) {
     for (const item of decremented) {
-      await ProductModel.findByIdAndUpdate(item.productId, {
-        $inc: { stock: item.quantity },
-      })
+      await restoreProductStock(item)
     }
 
     throw error
