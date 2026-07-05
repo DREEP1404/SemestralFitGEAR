@@ -18,4 +18,5 @@ export const env = {
   backendUrl: process.env.BACKEND_URL ?? `http://localhost:${Number(process.env.PORT ?? 4000)}`,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  clerkSecretKey: process.env.CLERK_SECRET_KEY,
 }
