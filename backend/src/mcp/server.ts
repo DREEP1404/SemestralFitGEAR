@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { connectDatabase } from '../config/db'
 import { getProductDetailsTool } from './tools/getProductDetails'
 import { searchProductsInputSchema, searchProductsTool } from './tools/searchProducts'
+import { updateStockTool } from './tools/updateStock'
 
 const server = new McpServer({
   name: 'fitgear-mcp',
@@ -65,6 +66,47 @@ server.registerTool(
   },
   async (args) => {
     const result = await getProductDetailsTool(args)
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+    }
+  },
+)
+
+server.registerTool(
+  'update_stock',
+  {
+    description:
+      "Update a single product's stock (inventory management only — not full product CRUD). Provide exactly one of `stock` (flat number) or `sizes` (per-size breakdown), depending on the product's category. Admin-only — requires a valid Clerk JWT whose user has the ADMIN role.",
+    inputSchema: {
+      productId: { type: 'string', description: 'Mongo ObjectId of the product' },
+      token: {
+        type: 'string',
+        description: 'Clerk JWT bearer token of the requesting admin (required)',
+      },
+      stock: {
+        type: 'number',
+        description: 'New flat stock count (for products whose category does not require sizes)',
+      },
+      sizes: {
+        type: 'array',
+        description: 'Per-size stock breakdown (for sized categories): [{ label, stock }]',
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string' },
+            stock: { type: 'number' },
+          },
+        },
+      },
+    },
+  },
+  async (args) => {
+    const result = await updateStockTool(args)
     return {
       content: [
         {
