@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { connectDatabase } from '../config/db'
+import { connectDatabase } from '../../backend/src/config/db'
 import { getOrderStatusTool } from './tools/getOrderStatus'
 import { getProductDetailsTool } from './tools/getProductDetails'
 import { getSalesMetricsTool } from './tools/getSalesMetrics'
