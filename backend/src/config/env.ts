@@ -19,4 +19,8 @@ export const env = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   clerkSecretKey: process.env.CLERK_SECRET_KEY,
+  // Transactional email (Resend). When RESEND_API_KEY is absent the email
+  // service degrades gracefully (logs instead of sending) so dev/test never break.
+  resendApiKey: process.env.RESEND_API_KEY,
+  emailFrom: process.env.EMAIL_FROM ?? 'FITGEAR <onboarding@resend.dev>',
 }
