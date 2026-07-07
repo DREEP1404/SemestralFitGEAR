@@ -21,3 +21,7 @@ services:
         sync: false
       - key: BACKEND_URL
         sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
