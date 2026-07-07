@@ -12,6 +12,15 @@ Formato por entrada:
 > los services/models/middlewares de `backend/src/` sin duplicarlos. Se levanta con
 > `cd mcp-server && bun install && bun run start`.
 
+> **Nota de implementación (fix aplicado durante pruebas end-to-end):**
+> `syncClerkUser()` sobreescribía `role` en **cada login** según un email
+> hardcodeado, revirtiendo cualquier promoción manual a `ADMIN` hecha directo en
+> Mongo. Ahora el rol solo se asigna al **crear** el usuario; en logins
+> posteriores se respeta el valor ya guardado en la BD. Afecta a las cuatro tools
+> de administrador (`get_sales_metrics`, `update_stock`, `list_orders`,
+> `manage_categories`), que dependen de `getUserRoleByClerkId()` para el check de
+> rol.
+
 ---
 
 ## 1. `search_products`
@@ -173,6 +182,16 @@ válido). Como Clerk entrega el `sub`, la tool resuelve `clerkUserId → User` v
 cd mcp-server
 MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
 ```
+
+**Nota de implementación (fix aplicado durante pruebas end-to-end):** `updateProduct()`
+usaba `product.save()`, que en Mongoose revalida **todo** el documento — si un
+producto tenía datos legacy inválidos en un campo no relacionado (p. ej. `images: []`
+en un producto sembrado antes de que existiera la validación de 1-4 imágenes),
+`update_stock` fallaba con un error de `images` aunque solo se tocara el stock.
+Se cambió a `ProductModel.findByIdAndUpdate(id, { $set: updateFields }, { new: true,
+runValidators: true, context: 'query' })`, que solo valida los campos incluidos en
+el `$set`. Verificado con los 48 tests de `mcp-server` y los tests de `backend`
+(sin regresiones) más una prueba manual end-to-end vía la tool real.
 
 ---
 

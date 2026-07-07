@@ -98,37 +98,40 @@ function calculateDiscount(
   return { hasDiscount: true, discountPercentage, discountAmount, finalPrice }
 }
 
-// Applies the sizes-vs-flat-stock update rule to a product being edited:
-// sized categories derive stock from the size breakdown, others use the flat
-// field directly. Pulled out of updateProduct to keep its branching simple.
-function applySizesOrStock(
-  product: InstanceType<typeof ProductModel>,
+// Computes the sizes-vs-flat-stock fields to persist for a product being
+// edited: sized categories derive stock from the size breakdown, others use
+// the flat field directly. Pulled out of updateProduct to keep its branching
+// simple. `currentSizesCount` is the size-count of the untouched document,
+// used to validate the post-update state when the caller doesn't touch sizes.
+function computeSizesOrStock(
   requiresSizes: boolean,
   payload: Pick<ProductPayload, 'sizes' | 'stock'>,
-) {
+  currentSizesCount: number,
+): { sizes?: ProductSizeInput[]; stock?: number } {
   if (!requiresSizes) {
-    product.set('sizes', [])
-    if (payload.stock !== undefined) {
-      product.stock = payload.stock
-    }
-    return
+    return { sizes: [], ...(payload.stock !== undefined ? { stock: payload.stock } : {}) }
   }
+
+  let result: { sizes?: ProductSizeInput[]; stock?: number } = {}
+  let resultingSizesCount = currentSizesCount
 
   if (payload.sizes !== undefined) {
     const { sizes, stock } = resolveSizesAndStock(true, payload.sizes, 0)
-    product.set('sizes', sizes)
-    product.stock = stock
+    result = { sizes, stock }
+    resultingSizesCount = sizes.length
   } else if (payload.stock !== undefined) {
     throw new HttpError(400, 'Validation failed', [
       { path: 'stock', message: 'Stock is derived from sizes for this category; update sizes instead' },
     ])
   }
 
-  if (product.sizes.length === 0) {
+  if (resultingSizesCount === 0) {
     throw new HttpError(400, 'Validation failed', [
       { path: 'sizes', message: 'This category requires at least one size with stock' },
     ])
   }
+
+  return result
 }
 
 export interface ProductQuery {
@@ -230,20 +233,25 @@ export async function updateProduct(id: string, payload: ProductPayload) {
 
   if (payload.categoryId) {
     await resolveCategoryOrThrow(payload.categoryId)
-    product.categoryId = new Types.ObjectId(payload.categoryId)
   }
+  const targetCategoryId = payload.categoryId ?? product.categoryId.toString()
 
   // Sizes-requirement is driven by the product's (possibly just-changed) category.
-  const effectiveCategory = await resolveCategoryOrThrow(product.categoryId.toString())
+  const effectiveCategory = await resolveCategoryOrThrow(targetCategoryId)
+
+  const updateFields: Record<string, unknown> = {}
 
   if (payload.name !== undefined) {
-    product.name = payload.name
+    updateFields.name = payload.name
   }
   if (payload.description !== undefined) {
-    product.description = payload.description
+    updateFields.description = payload.description
   }
   if (payload.price !== undefined) {
-    product.price = payload.price
+    updateFields.price = payload.price
+  }
+  if (payload.categoryId) {
+    updateFields.categoryId = new Types.ObjectId(payload.categoryId)
   }
 
   let removedImages: string[] = []
@@ -252,27 +260,40 @@ export async function updateProduct(id: string, payload: ProductPayload) {
     removedImages = previousImages.filter(
       (url) => !nextImages.includes(toRelativeUploadPath(url)),
     )
-    product.images = nextImages
+    updateFields.images = nextImages
   }
 
-  applySizesOrStock(product, effectiveCategory.requiresSizes, payload)
+  const sizesOrStock = computeSizesOrStock(effectiveCategory.requiresSizes, payload, product.sizes.length)
+  Object.assign(updateFields, sizesOrStock)
 
   if (payload.isActive !== undefined) {
-    product.isActive = payload.isActive
+    updateFields.isActive = payload.isActive
   }
 
   const hasDiscount = payload.hasDiscount ?? product.hasDiscount
   const discountPercentage = payload.discountPercentage ?? product.discountPercentage
-  const discount = calculateDiscount(product.price, hasDiscount, discountPercentage)
-  product.hasDiscount = discount.hasDiscount
-  product.discountPercentage = discount.discountPercentage
-  product.discountAmount = discount.discountAmount
-  product.finalPrice = discount.finalPrice
+  const price = (updateFields.price as number | undefined) ?? product.price
+  const discount = calculateDiscount(price, hasDiscount, discountPercentage)
+  updateFields.hasDiscount = discount.hasDiscount
+  updateFields.discountPercentage = discount.discountPercentage
+  updateFields.discountAmount = discount.discountAmount
+  updateFields.finalPrice = discount.finalPrice
 
-  await product.save()
+  // $set (not a full-document save) so Mongoose only validates the fields
+  // actually being changed — a product with pre-existing invalid data in an
+  // untouched field (e.g. legacy empty `images`) must not block this update.
+  const updated = await ProductModel.findByIdAndUpdate(
+    id,
+    { $set: updateFields },
+    { new: true, runValidators: true, context: 'query' },
+  )
+  if (!updated) {
+    throw new HttpError(404, 'Product not found')
+  }
+
   await removeUploadedImages(removedImages)
 
-  return product
+  return updated
 }
 
 export async function deleteProduct(id: string) {
