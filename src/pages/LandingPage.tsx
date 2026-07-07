@@ -1,12 +1,11 @@
 import { useRef, type ReactElement } from 'react'
 import { Link } from 'react-router-dom'
-import { CategoryCards } from '../components/CategoryCards'
-import { FeaturedProducts } from '../components/FeaturedProducts'
-import { Hero } from '../components/Hero'
+import { CategoryShowcase } from '../components/CategoryShowcase'
+import { GiftFinder } from '../components/GiftFinder'
+import { HeroCarousel } from '../components/HeroCarousel'
 import { Marquee } from '../components/Marquee'
-import { ProgramCards } from '../components/ProgramCards'
 import { SectionDecor } from '../components/SectionDecor'
-import { WhyFitgear } from '../components/WhyFitgear'
+import { useCart } from '../context/CartContext'
 import { useReveal } from '../hooks/useReveal'
 
 interface TrustItem {
@@ -59,58 +58,22 @@ const trustItems: TrustItem[] = [
 
 export function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null)
+  const { openCart } = useCart()
   useReveal(rootRef)
 
   return (
     <div ref={rootRef} className="bg-slate-950">
-      {/* Hero — full bleed editorial */}
-      <Hero />
-
-      {/* Trust strip */}
-      <div className="border-y border-white/[0.06] bg-slate-900/40">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-4 px-4 py-6 sm:px-6 lg:px-8">
-          {trustItems.map((item) => (
-            <div
-              key={item.label}
-              data-reveal
-              className="flex items-center gap-2.5 text-sm font-semibold text-slate-300"
-            >
-              <span className="text-lime-400">{item.icon}</span>
-              {item.label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Programs — train by goal */}
-      <section className="relative overflow-hidden">
-        <SectionDecor pattern="dots" glowA="bg-lime-400/12" glowB="bg-violet-500/12" watermark="Goals" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <ProgramCards />
-        </div>
-      </section>
+      {/* Hero — full bleed image carousel */}
+      <HeroCarousel />
 
       {/* Dynamic marquee divider */}
       <Marquee />
 
-      {/* Categories */}
-      <section className="relative overflow-hidden border-t border-white/[0.06] bg-gradient-to-b from-slate-900/40 to-slate-950">
-        <SectionDecor pattern="grid" glowA="bg-cyan-500/12" glowB="bg-lime-400/12" watermark="Shop" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <CategoryCards />
-        </div>
-      </section>
+      {/* Featured categories — big image + related products, alternating layout */}
+      <CategoryShowcase />
 
-      {/* Featured products with category tabs */}
-      <section className="relative overflow-hidden">
-        <SectionDecor pattern="dots" glowA="bg-amber-400/12" glowB="bg-lime-400/12" watermark="Gear" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <FeaturedProducts />
-        </div>
-      </section>
-
-      {/* Why FITGEAR — full-bleed editorial */}
-      <WhyFitgear />
+      {/* Gift finder — browse by budget tier, below the featured section */}
+      <GiftFinder />
 
       {/* CTA banner */}
       <section className="relative overflow-hidden">
@@ -147,17 +110,34 @@ export function LandingPage() {
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
-              <Link
-                to="/cart"
+              <button
+                type="button"
+                onClick={openCart}
                 className="inline-flex rounded-full border border-white/15 px-8 py-3.5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
               >
                 Ver carrito
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       </div>
       </section>
+
+      {/* Trust strip — right above the footer */}
+      <div className="border-y border-white/[0.06] bg-slate-900/40">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-4 px-4 py-6 sm:px-6 lg:px-8">
+          {trustItems.map((item) => (
+            <div
+              key={item.label}
+              data-reveal
+              className="flex items-center gap-2.5 text-sm font-semibold text-slate-300"
+            >
+              <span className="text-lime-400">{item.icon}</span>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

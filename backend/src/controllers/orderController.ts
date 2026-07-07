@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import type { AppEnv } from '../app'
-import { createOrder, getOrderById, listOrders, listOrdersByUserId } from '../services/orderService'
+import { cancelOrder, createOrder, getOrderById, listOrders, listOrdersByUserId } from '../services/orderService'
 
 export const getOrders = async (c: Context<AppEnv>) => {
   const orders = await listOrders()
@@ -22,8 +22,14 @@ export const getOrdersByUser = async (c: Context<AppEnv>) => {
 export const createOrderController = async (c: Context<AppEnv>) => {
   const payload = c.get('validatedBody') as {
     userId: string
-    items: Array<{ productId: string; quantity: number }>
+    items: Array<{ productId: string; quantity: number; size?: string }>
   }
   const order = await createOrder(payload)
   return c.json(order, 201)
+}
+
+export const cancelOrderController = async (c: Context<AppEnv>) => {
+  const { id } = c.get('validatedParams') as { id: string }
+  const order = await cancelOrder(id)
+  return c.json(order, 200)
 }

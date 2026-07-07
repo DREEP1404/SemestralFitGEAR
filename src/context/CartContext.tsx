@@ -4,13 +4,15 @@ import {
   useContext,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from 'react'
-import type { CartItemModel, Product } from '../types'
+import type { CartItemModel, Product, SizeLabel } from '../types'
 
 interface CartLine {
   product: Product
   quantity: number
+  size?: SizeLabel
 }
 
 interface CartContextValue {
@@ -19,10 +21,13 @@ interface CartContextValue {
   taxAmount: number
   shippingAmount: number
   total: number
-  addItem: (product: Product) => void
-  removeItem: (productId: string) => void
-  increase: (productId: string) => void
-  decrease: (productId: string) => void
+  isCartOpen: boolean
+  openCart: () => void
+  closeCart: () => void
+  addItem: (product: Product, quantity?: number, size?: SizeLabel) => void
+  removeItem: (productId: string, size?: SizeLabel) => void
+  increase: (productId: string, size?: SizeLabel) => void
+  decrease: (productId: string, size?: SizeLabel) => void
   clearCart: () => void
 }
 
@@ -34,37 +39,43 @@ function roundCurrency(value: number) {
 }
 
 type CartAction =
-  | { type: 'add'; product: Product }
-  | { type: 'remove'; productId: string }
-  | { type: 'increase'; productId: string }
-  | { type: 'decrease'; productId: string }
+  | { type: 'add'; product: Product; quantity: number; size?: SizeLabel }
+  | { type: 'remove'; productId: string; size?: SizeLabel }
+  | { type: 'increase'; productId: string; size?: SizeLabel }
+  | { type: 'decrease'; productId: string; size?: SizeLabel }
   | { type: 'clear' }
+
+// Two lines are the same cart line only if they're the same product AND the
+// same size — a product in two different sizes must stay two separate lines.
+function isSameLine(item: CartItemModel, productId: string, size: SizeLabel | undefined) {
+  return item.product.id === productId && item.size === size
+}
 
 function cartReducer(state: CartItemModel[], action: CartAction): CartItemModel[] {
   switch (action.type) {
     case 'add': {
-      const existing = state.find((item) => item.product.id === action.product.id)
+      const existing = state.some((item) => isSameLine(item, action.product.id, action.size))
       if (existing) {
         return state.map((item) =>
-          item.product.id === action.product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          isSameLine(item, action.product.id, action.size)
+            ? { ...item, quantity: item.quantity + action.quantity }
             : item,
         )
       }
-      return [...state, { product: action.product, quantity: 1 }]
+      return [...state, { product: action.product, quantity: action.quantity, size: action.size }]
     }
     case 'remove':
-      return state.filter((item) => item.product.id !== action.productId)
+      return state.filter((item) => !isSameLine(item, action.productId, action.size))
     case 'increase':
       return state.map((item) =>
-        item.product.id === action.productId
+        isSameLine(item, action.productId, action.size)
           ? { ...item, quantity: item.quantity + 1 }
           : item,
       )
     case 'decrease':
       return state
         .map((item) =>
-          item.product.id === action.productId
+          isSameLine(item, action.productId, action.size)
             ? { ...item, quantity: item.quantity - 1 }
             : item,
         )
@@ -80,11 +91,16 @@ const CartContext = createContext<CartContextValue | undefined>(undefined)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, [])
+  const [isCartOpen, setIsCartOpen] = useState(false)
 
   const items = useMemo(() => state as CartLine[], [state])
 
   const subtotal = useMemo(
-    () => items.reduce((acc, line) => acc + line.product.price * line.quantity, 0),
+    () =>
+      items.reduce((acc, line) => {
+        const unitPrice = line.product.hasDiscount ? line.product.finalPrice : line.product.price
+        return acc + unitPrice * line.quantity
+      }, 0),
     [items],
   )
 
@@ -98,20 +114,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [subtotal, taxAmount, shippingAmount],
   )
 
-  const addItem = useCallback((product: Product) => {
-    dispatch({ type: 'add', product })
+  const openCart = useCallback(() => setIsCartOpen(true), [])
+  const closeCart = useCallback(() => setIsCartOpen(false), [])
+
+  const addItem = useCallback((product: Product, quantity = 1, size?: SizeLabel) => {
+    dispatch({ type: 'add', product, quantity, size })
+    setIsCartOpen(true)
   }, [])
 
-  const removeItem = useCallback((productId: string) => {
-    dispatch({ type: 'remove', productId })
+  const removeItem = useCallback((productId: string, size?: SizeLabel) => {
+    dispatch({ type: 'remove', productId, size })
   }, [])
 
-  const increase = useCallback((productId: string) => {
-    dispatch({ type: 'increase', productId })
+  const increase = useCallback((productId: string, size?: SizeLabel) => {
+    dispatch({ type: 'increase', productId, size })
   }, [])
 
-  const decrease = useCallback((productId: string) => {
-    dispatch({ type: 'decrease', productId })
+  const decrease = useCallback((productId: string, size?: SizeLabel) => {
+    dispatch({ type: 'decrease', productId, size })
   }, [])
 
   const clearCart = useCallback(() => {
@@ -125,13 +145,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
       taxAmount,
       shippingAmount,
       total,
+      isCartOpen,
+      openCart,
+      closeCart,
       addItem,
       removeItem,
       increase,
       decrease,
       clearCart,
     }),
-    [items, subtotal, taxAmount, shippingAmount, total, addItem, removeItem, increase, decrease, clearCart],
+    [
+      items,
+      subtotal,
+      taxAmount,
+      shippingAmount,
+      total,
+      isCartOpen,
+      openCart,
+      closeCart,
+      addItem,
+      removeItem,
+      increase,
+      decrease,
+      clearCart,
+    ],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

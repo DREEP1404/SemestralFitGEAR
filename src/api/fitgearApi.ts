@@ -1,11 +1,17 @@
 import { apiRequest } from './apiClient'
-import type { BackendOrder, BackendOrderItem, BackendUser, Product } from '../types'
+import type { BackendOrder, BackendOrderItem, BackendUser, Product, SizeLabel } from '../types'
 import { resolveMediaUrl } from '../utils/media'
 
 interface MongoCategory {
   _id: string
   name: string
   description: string
+  requiresSizes: boolean
+}
+
+export interface ProductSizeInput {
+  label: SizeLabel
+  stock: number
 }
 
 export interface ProductUpsertInput {
@@ -13,9 +19,16 @@ export interface ProductUpsertInput {
   description: string
   price: number
   stock: number
-  imageFile?: File | null
+  /** Existing image URLs to keep (edit flow only — empty when creating). */
+  existingImages: string[]
+  /** New photos to upload — combined with existingImages, max 4 total. */
+  newImageFiles: File[]
   categoryId: string
   isActive: boolean
+  hasDiscount: boolean
+  discountPercentage: number
+  /** Only meaningful when the selected category requires sizes. */
+  sizes: ProductSizeInput[]
 }
 
 interface MongoProductCategory {
@@ -24,16 +37,26 @@ interface MongoProductCategory {
   description: string
 }
 
+interface MongoProductSize {
+  label: SizeLabel
+  stock: number
+}
+
 interface MongoProduct {
   _id: string
   name: string
   description: string
   price: number
   stock: number
-  imageUrl: string
+  images: string[]
+  sizes?: MongoProductSize[]
   isActive: boolean
   categoryId: string | MongoProductCategory | null
   createdAt?: string
+  hasDiscount?: boolean
+  discountPercentage?: number
+  discountAmount?: number
+  finalPrice?: number
 }
 
 interface MongoOrderUser {
@@ -59,10 +82,11 @@ interface MongoOrderItem {
     | {
         _id: string
         name: string
-        imageUrl?: string
+        images?: string[]
       }
     | null
   quantity: number
+  size?: SizeLabel
   unitPrice: number
   subtotal: number
 }
@@ -71,7 +95,7 @@ interface MongoOrder {
   _id: string
   userId: string | MongoOrderUser | null
   totalAmount: number
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELLED'
+  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
   createdAt: string
   items: MongoOrderItem[]
 }
@@ -81,6 +105,8 @@ function mapProduct(product: MongoProduct): Product {
     typeof product.categoryId === 'string'
       ? 'Sin categoria'
       : product.categoryId?.name ?? 'Sin categoria'
+
+  const images = (product.images ?? []).map(resolveMediaUrl)
 
   return {
     id: product._id,
@@ -92,10 +118,16 @@ function mapProduct(product: MongoProduct): Product {
     category: categoryName,
     price: product.price,
     stock: product.stock,
-    image: resolveMediaUrl(product.imageUrl),
+    image: images[0] ?? '',
+    images,
+    sizes: product.sizes ?? [],
     description: product.description,
     isActive: product.isActive,
     featured: false,
+    hasDiscount: product.hasDiscount ?? false,
+    discountPercentage: product.discountPercentage ?? 0,
+    discountAmount: product.discountAmount ?? 0,
+    finalPrice: product.finalPrice ?? product.price,
   }
 }
 
@@ -108,9 +140,13 @@ function toProductFormData(payload: ProductUpsertInput) {
   formData.set('stock', String(payload.stock))
   formData.set('categoryId', payload.categoryId)
   formData.set('isActive', String(payload.isActive))
+  formData.set('hasDiscount', String(payload.hasDiscount))
+  formData.set('discountPercentage', String(payload.discountPercentage))
+  formData.set('existingImages', JSON.stringify(payload.existingImages))
+  formData.set('sizes', JSON.stringify(payload.sizes))
 
-  if (payload.imageFile) {
-    formData.set('image', payload.imageFile)
+  for (const file of payload.newImageFiles) {
+    formData.append('images', file)
   }
 
   return formData
@@ -129,12 +165,8 @@ function mapUser(user: MongoUser): BackendUser {
 }
 
 function mapOrderItem(item: MongoOrderItem): BackendOrderItem {
-  const productImage =
-    typeof item.productId === 'string'
-      ? undefined
-      : item.productId?.imageUrl
-        ? resolveMediaUrl(item.productId.imageUrl)
-        : undefined
+  const productImages = typeof item.productId === 'string' ? undefined : item.productId?.images
+  const productImage = productImages?.[0] ? resolveMediaUrl(productImages[0]) : undefined
 
   return {
     id: item._id,
@@ -148,6 +180,7 @@ function mapOrderItem(item: MongoOrderItem): BackendOrderItem {
         : item.productId?.name ?? 'Producto eliminado',
     productImage,
     quantity: item.quantity,
+    size: item.size,
     unitPrice: item.unitPrice,
     subtotal: item.subtotal,
   }
@@ -172,11 +205,33 @@ export async function getCategories() {
   return apiRequest<MongoCategory[]>('/categories', { method: 'GET' })
 }
 
+export async function createCategory(payload: {
+  name: string
+  description?: string
+  requiresSizes: boolean
+}) {
+  return apiRequest<MongoCategory>('/categories', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export async function updateCategory(
+  id: string,
+  payload: Partial<{ name: string; description: string; requiresSizes: boolean }>,
+) {
+  return apiRequest<MongoCategory>(`/categories/${id}`, {
+    method: 'PUT',
+    body: payload,
+  })
+}
+
 export async function getProducts(params?: {
   categoryId?: string
   search?: string
   sortBy?: 'createdAt' | 'name' | 'price'
   sortOrder?: 'asc' | 'desc'
+  includeInactive?: boolean
 }) {
   const products = await apiRequest<MongoProduct[]>('/products', {
     method: 'GET',
@@ -230,6 +285,22 @@ export async function getUsers() {
   return users.map(mapUser)
 }
 
+export interface AdminMetrics {
+  totalRevenue: number
+  ordersCount: number
+  activeProductsCount: number
+  usersCount: number
+}
+
+/**
+ * Server-computed admin dashboard summary (GET /api/admin/metrics). Admin-only:
+ * the backend returns 403 for a CUSTOMER token. Single source of truth for the
+ * four overview numbers — no client-side aggregation.
+ */
+export async function getAdminMetrics() {
+  return apiRequest<AdminMetrics>('/admin/metrics', { method: 'GET' })
+}
+
 export async function getOrders() {
   const orders = await apiRequest<MongoOrder[]>('/orders', { method: 'GET' })
   return orders.map(mapOrder)
@@ -247,11 +318,18 @@ export async function getOrderById(orderId: string) {
 
 export async function createOrder(payload: {
   userId: string
-  items: Array<{ productId: string; quantity: number }>
+  items: Array<{ productId: string; quantity: number; size?: SizeLabel }>
 }) {
   const order = await apiRequest<MongoOrder>('/orders', {
     method: 'POST',
     body: payload,
+  })
+  return mapOrder(order)
+}
+
+export async function cancelOrder(orderId: string) {
+  const order = await apiRequest<MongoOrder>(`/orders/${orderId}/cancel`, {
+    method: 'PATCH',
   })
   return mapOrder(order)
 }

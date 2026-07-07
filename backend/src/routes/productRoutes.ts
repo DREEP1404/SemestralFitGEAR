@@ -7,7 +7,9 @@ import {
   getProducts,
   updateProductController,
 } from '../controllers/productController'
-import { uploadSingleProductImage } from '../middlewares/uploadProductImage'
+import { requireAdminMiddleware } from '../middlewares/requireAdmin'
+import { requireAuthMiddleware } from '../middlewares/requireAuth'
+import { uploadProductImages } from '../middlewares/uploadProductImage'
 import { validateBody, validateParams, validateQuery } from '../middlewares/validate'
 import { idParamSchema } from '../validations/commonValidation'
 import {
@@ -18,19 +20,32 @@ import {
 
 export const productRouter = new Hono<AppEnv>()
 
+// Public catalog reads — no auth required.
 productRouter.get('/', validateQuery(productQuerySchema), getProducts)
 productRouter.get('/:id', validateParams(idParamSchema), getProduct)
+
+// Admin writes — require a valid Clerk JWT AND the ADMIN role (RBAC).
 productRouter.post(
   '/',
-  uploadSingleProductImage,
+  requireAuthMiddleware(),
+  requireAdminMiddleware(),
+  uploadProductImages,
   validateBody(createProductSchema),
   createProductController,
 )
 productRouter.put(
   '/:id',
+  requireAuthMiddleware(),
+  requireAdminMiddleware(),
   validateParams(idParamSchema),
-  uploadSingleProductImage,
+  uploadProductImages,
   validateBody(updateProductSchema),
   updateProductController,
 )
-productRouter.delete('/:id', validateParams(idParamSchema), deleteProductController)
+productRouter.delete(
+  '/:id',
+  requireAuthMiddleware(),
+  requireAdminMiddleware(),
+  validateParams(idParamSchema),
+  deleteProductController,
+)
