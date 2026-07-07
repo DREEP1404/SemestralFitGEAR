@@ -74,7 +74,6 @@ export async function syncClerkUser(payload: SyncClerkUserPayload) {
   existingUser.clerkUserId = payload.clerkUserId
   existingUser.fullName = payload.fullName
   existingUser.email = normalizedEmail
-  existingUser.role = role
   await existingUser.save()
 
   return { user: existingUser, created: false }
