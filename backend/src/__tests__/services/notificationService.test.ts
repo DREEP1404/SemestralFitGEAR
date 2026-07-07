@@ -13,19 +13,20 @@ const { sendNotification } = await import('../../services/notificationService')
 interface FakeResponse {
   ok: boolean
   status: number
-  json: () => Promise<{ id?: string }>
+  headers: { get: (key: string) => string | null }
   text: () => Promise<string>
 }
+// SendGrid returns 202 Accepted with an empty body; the id is in the X-Message-Id header.
 const okResponse = (id = 'email_123'): FakeResponse => ({
   ok: true,
-  status: 200,
-  json: async () => ({ id }),
+  status: 202,
+  headers: { get: (key) => (key.toLowerCase() === 'x-message-id' ? id : null) },
   text: async () => '',
 })
 const errResponse = (status = 500): FakeResponse => ({
   ok: false,
   status,
-  json: async () => ({}),
+  headers: { get: () => null },
   text: async () => 'provider error',
 })
 
@@ -42,15 +43,15 @@ describe('sendNotification (email + retry/backoff + graceful fallback)', () => {
     mockFetch.mockImplementation(async () => okResponse())
     // @ts-expect-error test override of the global fetch
     globalThis.fetch = mockFetch
-    env.resendApiKey = 'test_resend_key'
+    env.sendgridApiKey = 'test_sendgrid_key'
   })
 
   afterEach(() => {
     globalThis.fetch = originalFetch
   })
 
-  it('graceful fallback: skips the send (no fetch) when RESEND_API_KEY is missing', async () => {
-    env.resendApiKey = undefined
+  it('graceful fallback: skips the send (no fetch) when SENDGRID_API_KEY is missing', async () => {
+    env.sendgridApiKey = undefined
 
     const result = await sendNotification(message)
 
@@ -82,7 +83,7 @@ describe('sendNotification (email + retry/backoff + graceful fallback)', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
-  it('gives up as failed after exactly 3 attempts', async () => {
+  it('gives up as failed after exactly 3 attempts on transient (5xx) errors', async () => {
     mockFetch.mockImplementation(async () => errResponse(500))
 
     const result = await sendNotification(message, { baseBackoffMs: 1 })
@@ -94,5 +95,15 @@ describe('sendNotification (email + retry/backoff + graceful fallback)', () => {
       'log_1',
       expect.objectContaining({ status: 'failed', attempts: 3 }),
     )
+  })
+
+  it('does NOT retry a permanent 4xx error (fails after a single attempt)', async () => {
+    mockFetch.mockImplementation(async () => errResponse(403))
+
+    const result = await sendNotification(message, { baseBackoffMs: 1 })
+
+    expect(result.status).toBe('failed')
+    expect(result.attempts).toBe(1)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
