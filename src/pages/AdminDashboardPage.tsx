@@ -261,7 +261,7 @@ export function AdminDashboardPage() {
         <AdminOrderDetailModal
           order={selectedOrder}
           onClose={() => setSelectedOrderId(null)}
-          onRefunded={refreshOrdersAndMetrics}
+          onUpdated={refreshOrdersAndMetrics}
         />
       ) : null}
     </div>
