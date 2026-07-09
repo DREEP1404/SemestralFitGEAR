@@ -70,9 +70,11 @@ MONGODB_URI=mongodb://127.0.0.1:27017/fitgear
 CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:3000
 BACKEND_URL=http://localhost:4000
 ```
+
+> **Importante — `FRONTEND_URL` debe ser `http://localhost:3000`.** Tras la migracion a TanStack Start el frontend corre en el puerto **3000** (antes era `5173` con el SPA de Vite). El backend usa `FRONTEND_URL` para su politica de CORS: si esta linea quedo en `5173`, el navegador bloquea **todas** las llamadas del frontend por CORS y veras el catalogo vacio ("No hay productos") y la vista de cliente aunque tu cuenta sea ADMIN (la sincronizacion de rol tambien se bloquea). Si ya tenias un `backend/.env` viejo, actualiza esta linea a `3000`. El backend NO recarga el `.env` en caliente: reinicialo tras el cambio.
 
 ## Como ejecutar frontend y backend
 
@@ -87,7 +89,7 @@ npm run dev
 El frontend queda disponible en:
 
 ```bash
-http://localhost:5173/
+http://localhost:3000/
 ```
 
 ### Backend
@@ -114,6 +116,8 @@ docker compose up --build
 ```
 
 El backend queda en `http://localhost:4000` y MongoDB en el puerto `27017`. El frontend se ejecuta aparte con `npm run dev`.
+
+> **Ojo — Docker usa una MongoDB local, no la de Atlas.** `docker-compose.yml` sobrescribe `MONGODB_URI` para apuntar al contenedor de MongoDB local (vacio al inicio), asi que al levantar con Docker **no** veras el catalogo ni los usuarios de la base compartida de Atlas. Para trabajar contra Atlas (datos reales, tu cuenta ADMIN), corre el backend fuera de Docker con `cd backend && bun --watch src/server.ts`, que si lee `backend/.env` y su `MONGODB_URI` de Atlas.
 
 ## Estructura del proyecto
 
@@ -230,7 +234,7 @@ bun src/server.ts
 ### Clerk no autentica
 
 - Revisa `VITE_CLERK_PUBLISHABLE_KEY` en el frontend.
-- Confirma que la instancia de Clerk permita `http://localhost:5173`.
+- Confirma que la instancia de Clerk permita `http://localhost:3000`.
 
 ## Estado actual del proyecto
 

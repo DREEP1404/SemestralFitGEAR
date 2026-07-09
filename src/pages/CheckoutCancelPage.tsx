@@ -10,11 +10,13 @@ import { queryKeys } from '../lib/queryKeys'
 export function CheckoutCancelPage() {
   const search = useSearch({ strict: false }) as { orderId?: string }
   const orderId = search.orderId ?? null
-  const { backendUser } = useAuth()
+  const { backendUser, isLoaded } = useAuth()
   const { openCart } = useCart()
   const queryClient = useQueryClient()
 
-  const orderQuery = useOrderDetailQuery(orderId, Boolean(orderId))
+  // Gate on isLoaded: the cancel page is also reached via a full-page Stripe
+  // redirect, so the order lookup must wait until the auth token is ready.
+  const orderQuery = useOrderDetailQuery(orderId, Boolean(orderId) && isLoaded)
 
   const canRetryPayment = orderQuery.data?.status === 'PENDING'
 

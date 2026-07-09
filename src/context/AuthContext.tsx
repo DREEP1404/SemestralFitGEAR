@@ -25,7 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser()
   const { getToken } = useClerkAuth()
   const [backendUser, setBackendUser] = useState<BackendUser | null>(null)
-  const [syncing, setSyncing] = useState(false)
+  // Starts true (not false): once Clerk resolves with a signed-in user, this
+  // context's `isLoaded` must stay false until the sync effect below actually
+  // runs and either finishes or determines there's no user — otherwise there's
+  // a render where clerk isLoaded=true but syncing hasn't been set yet, making
+  // `isLoaded` (= clerkLoaded && !syncing) true with `role` still null. Guards
+  // like ProtectedGuard would read that as "loaded, not admin" and redirect
+  // before the real role ever loads.
+  const [syncing, setSyncing] = useState(true)
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Must run before the sync effect below so apiClient already has a token
