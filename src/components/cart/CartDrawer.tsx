@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { createCheckoutSession, createOrder } from '../../api/fitgearApi'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'

@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { cancelOrder, createCheckoutSession } from '../api/fitgearApi'
@@ -8,8 +8,8 @@ import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
 import { queryKeys } from '../lib/queryKeys'
 
 export function CheckoutCancelPage() {
-  const [searchParams] = useSearchParams()
-  const orderId = searchParams.get('orderId')
+  const search = useSearch({ strict: false }) as { orderId?: string }
+  const orderId = search.orderId ?? null
   const { backendUser } = useAuth()
   const { openCart } = useCart()
   const queryClient = useQueryClient()

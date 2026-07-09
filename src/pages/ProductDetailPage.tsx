@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from '@tanstack/react-router'
 import { ApiError } from '../api/apiClient'
 import { getProductById, getProducts } from '../api/fitgearApi'
 import { ProductCard } from '../components/ProductCard'
@@ -51,7 +51,7 @@ function getAddToCartLabel(outOfStock: boolean, needsSizeChoice: boolean) {
 }
 
 export function ProductDetailPage() {
-  const { id } = useParams()
+  const { id } = useParams({ strict: false }) as { id?: string }
   const { addItem } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [related, setRelated] = useState<Product[]>([])
@@ -191,7 +191,8 @@ export function ProductDetailPage() {
         </Link>
         <span className="text-slate-600">/</span>
         <Link
-          to={`/shop?category=${encodeURIComponent(product.category)}`}
+          to="/shop"
+          search={{ category: product.category }}
           className="transition hover:text-lime-400"
         >
           {product.category}

@@ -1,5 +1,5 @@
 import { useRef, type ReactElement } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { CategoryShowcase } from '../components/CategoryShowcase'
 import { GiftFinder } from '../components/GiftFinder'
 import { HeroCarousel } from '../components/HeroCarousel'

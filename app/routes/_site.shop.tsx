@@ -7,7 +7,7 @@ import { CustomerGuard } from '../lib/CustomerGuard'
 // separate /category/:id route). validateSearch keeps those params through
 // TanStack navigation so the react-router-shim's useSearchParams round-trips.
 export const Route = createFileRoute('/_site/shop')({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { category?: string; search?: string } => ({
     category: typeof search.category === 'string' ? search.category : undefined,
     search: typeof search.search === 'string' ? search.search : undefined,
   }),

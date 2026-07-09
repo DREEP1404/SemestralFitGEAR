@@ -1,6 +1,6 @@
 # FITGEAR
 
-FITGEAR es una tienda de articulos fitness con frontend en React y Vite, backend en Hono sobre Bun, persistencia en MongoDB, autenticacion con Clerk y flujo de checkout con Stripe. El proyecto separa claramente la capa de presentacion, el consumo de API y la logica del backend para catalogo, carrito, pedidos, usuarios, pagos y administracion.
+FITGEAR es una tienda de articulos fitness con frontend en React y TanStack Start (SSR sobre Vite), backend en Hono sobre Bun, persistencia en MongoDB, autenticacion con Clerk y flujo de checkout con Stripe. El proyecto separa claramente la capa de presentacion, el consumo de API y la logica del backend para catalogo, carrito, pedidos, usuarios, pagos y administracion.
 
 ## Descripcion del proyecto
 
@@ -11,7 +11,7 @@ La aplicacion permite navegar un catalogo real de productos, filtrar por categor
 - React 19
 - Vite
 - TypeScript
-- React Router
+- TanStack Start (SSR) + TanStack Router
 - TanStack React Query
 - Clerk
 - Framer Motion
@@ -132,18 +132,16 @@ El backend queda en `http://localhost:4000` y MongoDB en el puerto `27017`. El f
 │   │   ├── utils/
 │   │   └── validations/
 │   └── package.json
+├── app/                  # TanStack Start: routes (app/routes/**), guards (app/lib/**)
 ├── src/
 │   ├── api/
 │   ├── components/
 │   ├── context/
 │   ├── data/
 │   ├── hooks/
-│   ├── layouts/
 │   ├── pages/
-│   ├── routes/
 │   └── utils/
 ├── public/
-├── index.html
 ├── package.json
 ├── vite.config.ts
 └── README.md
@@ -184,11 +182,17 @@ El frontend consume la API mediante `src/api/apiClient.ts` y `src/api/fitgearApi
 ### Raiz del proyecto
 
 ```bash
-npm run dev
-npm run build
+npm run dev         # servidor de desarrollo (SSR) en http://localhost:3000
+npm run build       # typecheck + build de produccion (dist/client + dist/server)
+npm run start       # levanta el build de produccion (node, no requiere el CLI de dev)
+npm run typecheck
 npm run lint
-npm run preview
 ```
+
+`npm start` corre `vite preview`, que en la version instalada de `@tanstack/react-start`
+(sin Nitro) es el mecanismo soportado para servir el build de `dist/` como un
+proceso Node real — sirve `dist/client` como estatico y usa `dist/server/server.js`
+para el SSR de cada ruta.
 
 ### Backend
 

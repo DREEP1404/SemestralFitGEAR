@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { getCategories, getProducts } from '../api/fitgearApi'
 import type { Product } from '../types'
 import { formatCurrency } from '../utils/format'
@@ -137,7 +137,8 @@ export function CategoryShowcase() {
               <div key={item.id} className="grid gap-6 lg:grid-cols-2 lg:gap-8">
                 <Link
                   data-reveal
-                  to={`/shop?category=${encodeURIComponent(item.category)}`}
+                  to="/shop"
+                  search={{ category: item.category }}
                   className={`group relative order-1 block h-72 overflow-hidden rounded-3xl border border-white/[0.08] sm:h-96 lg:h-full ${
                     item.imagePosition === 'right' ? 'lg:order-2' : 'lg:order-1'
                   }`}
@@ -173,7 +174,8 @@ export function CategoryShowcase() {
                     <Link
                       key={product.id}
                       data-reveal
-                      to={`/product/${product.id}`}
+                      to="/product/$id"
+                      params={{ id: product.id }}
                       className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900 transition duration-300 hover:-translate-y-1 hover:border-lime-400/30 hover:shadow-[0_20px_40px_-24px_rgba(163,230,53,0.3)]"
                     >
                       <div className="flex aspect-square items-center justify-center bg-gradient-to-b from-white to-slate-100 p-3">

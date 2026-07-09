@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { useCart } from '../context/CartContext'
 
-const shopLinks = [
-  { label: 'Pesas', to: '/shop?category=Pesas' },
-  { label: 'Bandas', to: '/shop?category=Bandas' },
-  { label: 'Colchonetas', to: '/shop?category=Colchonetas' },
+const shopLinks: Array<{ label: string; to: string; search?: { category: string } }> = [
+  { label: 'Pesas', to: '/shop', search: { category: 'Pesas' } },
+  { label: 'Bandas', to: '/shop', search: { category: 'Bandas' } },
+  { label: 'Colchonetas', to: '/shop', search: { category: 'Colchonetas' } },
   { label: 'Ver todo', to: '/shop' },
 ]
 
@@ -67,6 +67,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.to}
+                    search={link.search}
                     className="text-sm text-slate-400 transition hover:text-white"
                   >
                     {link.label}
