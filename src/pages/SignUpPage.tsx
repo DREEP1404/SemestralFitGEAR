@@ -1,5 +1,5 @@
-import { SignUp, useAuth } from '@clerk/clerk-react'
-import { Link, Navigate } from 'react-router-dom'
+import { SignUp, useAuth } from '@clerk/tanstack-react-start'
+import { Link, Navigate } from '@tanstack/react-router'
 import { clerkDarkAppearance } from '../lib/clerkAppearance'
 
 export function SignUpPage() {

@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react'
+import { useAuth as useClerkAuth, useUser } from '@clerk/tanstack-react-start'
 import {
   createContext,
   useContext,

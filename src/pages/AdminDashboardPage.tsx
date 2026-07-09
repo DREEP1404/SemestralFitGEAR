@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { getAdminMetrics, getOrders, getProducts, getUsers, type AdminMetrics } from '../api/fitgearApi'
 import { AdminSidebar } from '../components/AdminSidebar'
 import { AdminCategoriesSection } from '../components/admin/AdminCategoriesSection'

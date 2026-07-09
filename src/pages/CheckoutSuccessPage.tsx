@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { useSearchParams } from 'react-router-dom'
+import { useSearch } from '@tanstack/react-router'
 import { ApiError } from '../api/apiClient'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
@@ -9,9 +9,9 @@ import { useCheckoutPaymentConfirmationQuery } from '../hooks/usePaymentQueries'
 import { queryKeys } from '../lib/queryKeys'
 
 export function CheckoutSuccessPage() {
-  const [searchParams] = useSearchParams()
-  const orderId = searchParams.get('orderId')
-  const sessionId = searchParams.get('session_id')
+  const search = useSearch({ strict: false }) as { orderId?: string; session_id?: string }
+  const orderId = search.orderId ?? null
+  const sessionId = search.session_id ?? null
   const { backendUser } = useAuth()
   const { clearCart } = useCart()
   const queryClient = useQueryClient()
