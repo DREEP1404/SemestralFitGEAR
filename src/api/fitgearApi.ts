@@ -10,7 +10,7 @@ import type {
 } from '../types'
 import { resolveMediaUrl } from '../utils/media'
 
-interface MongoCategory {
+export interface MongoCategory {
   _id: string
   name: string
   description: string
@@ -241,6 +241,12 @@ export async function updateCategory(
   return apiRequest<MongoCategory>(`/categories/${id}`, {
     method: 'PUT',
     body: payload,
+  })
+}
+
+export async function deleteCategory(id: string) {
+  return apiRequest<{ message: string }>(`/categories/${id}`, {
+    method: 'DELETE',
   })
 }
 
