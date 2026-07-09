@@ -12,11 +12,11 @@ export function CheckoutSuccessPage() {
   const search = useSearch({ strict: false }) as { orderId?: string; session_id?: string }
   const orderId = search.orderId ?? null
   const sessionId = search.session_id ?? null
-  const { backendUser } = useAuth()
+  const { backendUser, isLoaded } = useAuth()
   const { clearCart } = useCart()
   const queryClient = useQueryClient()
 
-  const confirmationQuery = useCheckoutPaymentConfirmationQuery(orderId, sessionId)
+  const confirmationQuery = useCheckoutPaymentConfirmationQuery(orderId, sessionId, isLoaded)
 
   const isPaid = confirmationQuery.data?.status === 'PAID'
   const isPendingConfirmation =
