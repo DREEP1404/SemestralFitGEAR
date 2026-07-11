@@ -1,11 +1,12 @@
 import { connectDatabase } from './config/db'
 import { env } from './config/env'
 import { app } from './app'
+import { logger } from './utils/logger'
 
 try {
   await connectDatabase()
 } catch (error) {
-  console.error('Failed to start server', error)
+  logger.error('Failed to start server', { error })
   process.exit(1)
 }
 
@@ -14,4 +15,4 @@ Bun.serve({
   fetch: app.fetch,
 })
 
-console.info(`FITGEAR API running on http://localhost:${env.port}`)
+logger.info('FITGEAR API running', { url: `http://localhost:${env.port}` })

@@ -6,6 +6,7 @@ import { ProductModel } from '../models/Product'
 import { ReviewModel } from '../models/Review'
 import { UserModel } from '../models/User'
 import { HttpError } from '../utils/httpError'
+import { logger } from '../utils/logger'
 import {
   ACTION_TO_STATUS,
   PUBLIC_REVIEW_STATUS,
@@ -359,7 +360,7 @@ function notifyCustomerReviewRejected(
   const email = reviewer?.email
 
   if (!email) {
-    console.warn('[review-rejected] cannot notify: review author has no email', {
+    logger.warn('[review-rejected] cannot notify: review author has no email', {
       reviewId: String(review._id),
     })
     return

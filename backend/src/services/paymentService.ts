@@ -7,6 +7,7 @@ import { OrderItemModel } from '../models/OrderItem'
 import { OrderModel } from '../models/Order'
 import { ProductModel } from '../models/Product'
 import { HttpError } from '../utils/httpError'
+import { logger } from '../utils/logger'
 import { notifyAdminsOfLowStockCrossing } from './lowStockService'
 import { dispatchNotification } from './notificationService'
 import {
@@ -303,7 +304,7 @@ export async function refundOrder(orderId: string, options: RefundOrderOptions =
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error('[refund] Stripe refund failed', { orderId, error })
+    logger.error('[refund] Stripe refund failed', { orderId, error })
     // Atomicity: the order is left untouched so it never shows REFUNDED without
     // an actual Stripe refund behind it.
     throw new HttpError(502, `Stripe refund failed: ${message}`)
@@ -337,7 +338,7 @@ async function recordRefundHistory(
       metadata: { stripeRefundId, amount: order.totalAmount },
     })
   } catch (error) {
-    console.error('[refund] failed to write order history event', {
+    logger.error('[refund] failed to write order history event', {
       orderId: order._id.toString(),
       error,
     })
@@ -353,7 +354,7 @@ function notifyCustomerRefund(
   const email = typeof order.userId === 'string' ? undefined : customer?.email
 
   if (!email) {
-    console.warn('[refund] cannot notify: order has no customer email', {
+    logger.warn('[refund] cannot notify: order has no customer email', {
       orderId: order._id.toString(),
     })
     return
@@ -420,12 +421,12 @@ function buildRefundEmailHtml(params: {
 
 export async function constructWebhookEvent(payload: string, signature: string | undefined) {
   if (!signature) {
-    console.error('[stripe-webhook] rejected event: missing Stripe signature header')
+    logger.error('[stripe-webhook] rejected event: missing Stripe signature header')
     throw new HttpError(400, 'Missing Stripe signature header')
   }
 
   if (!env.stripeWebhookSecret) {
-    console.error('[stripe-webhook] rejected event: STRIPE_WEBHOOK_SECRET is not configured')
+    logger.error('[stripe-webhook] rejected event: STRIPE_WEBHOOK_SECRET is not configured')
     throw new HttpError(500, 'Stripe webhook is not configured')
   }
 
@@ -436,7 +437,7 @@ export async function constructWebhookEvent(payload: string, signature: string |
     // uses the Web Crypto provider, whose HMAC only works asynchronously.
     return await stripe.webhooks.constructEventAsync(payload, signature, env.stripeWebhookSecret)
   } catch (error) {
-    console.error('[stripe-webhook] signature verification failed', error)
+    logger.error('[stripe-webhook] signature verification failed', { error })
     throw new HttpError(400, 'Invalid Stripe signature')
   }
 }
@@ -449,7 +450,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
     const record = await recordWebhookEvent(event, extractWebhookData(event))
     alreadyProcessed = record.alreadyProcessed
   } catch (error) {
-    console.error('[stripe-webhook] failed to record audit event', { eventId: event.id, error })
+    logger.error('[stripe-webhook] failed to record audit event', { eventId: event.id, error })
   }
 
   // Idempotency: a redelivery of an already-processed event does no work twice.
@@ -481,7 +482,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
     }
 
     const message = error instanceof Error ? error.message : String(error)
-    console.error('[stripe-webhook] failed to process event', {
+    logger.error('[stripe-webhook] failed to process event', {
       eventId: event.id,
       type: event.type,
       error,
@@ -548,7 +549,7 @@ async function handlePaymentFailed(event: Stripe.Event) {
   const orderId = paymentIntent.metadata?.orderId
 
   if (!orderId) {
-    console.warn('[stripe-webhook] payment_intent.payment_failed without orderId metadata', {
+    logger.warn('[stripe-webhook] payment_intent.payment_failed without orderId metadata', {
       paymentIntentId: paymentIntent.id,
     })
     return
@@ -573,7 +574,7 @@ async function markOrderAsFailed(orderId: string, paymentIntentId: string, reaso
   const order = await OrderModel.findById(orderId).populate('userId', 'email fullName')
 
   if (!order) {
-    console.warn('[stripe-webhook] payment failed for unknown order', { orderId })
+    logger.warn('[stripe-webhook] payment failed for unknown order', { orderId })
     return null
   }
 
@@ -581,7 +582,7 @@ async function markOrderAsFailed(orderId: string, paymentIntentId: string, reaso
   // that already reached PAID/SHIPPED/DELIVERED/CANCELLED/REFUNDED. Returning
   // null here also means the customer is NOT re-notified for such late events.
   if (order.status !== 'PENDING') {
-    console.info('[stripe-webhook] ignoring payment_failed for non-pending order', {
+    logger.info('[stripe-webhook] ignoring payment_failed for non-pending order', {
       orderId,
       status: order.status,
     })
@@ -593,7 +594,7 @@ async function markOrderAsFailed(orderId: string, paymentIntentId: string, reaso
   order.stripePaymentIntentId = paymentIntentId
   await order.save()
 
-  console.info('[stripe-webhook] order marked FAILED', { orderId, paymentIntentId, reason })
+  logger.info('[stripe-webhook] order marked FAILED', { orderId, paymentIntentId, reason })
   return order
 }
 
@@ -605,7 +606,7 @@ function notifyCustomerPaymentFailed(
   const email = typeof order.userId === 'string' ? undefined : customer?.email
 
   if (!email) {
-    console.warn('[stripe-webhook] cannot notify: order has no customer email', {
+    logger.warn('[stripe-webhook] cannot notify: order has no customer email', {
       orderId: order._id.toString(),
     })
     return
@@ -674,7 +675,7 @@ export async function notifyCustomerPurchaseConfirmed(orderId: string) {
     const order = await OrderModel.findById(orderId).populate('userId', 'email fullName')
 
     if (!order) {
-      console.warn('[stripe-webhook] cannot send confirmation: order not found', { orderId })
+      logger.warn('[stripe-webhook] cannot send confirmation: order not found', { orderId })
       return
     }
 
@@ -682,7 +683,7 @@ export async function notifyCustomerPurchaseConfirmed(orderId: string) {
     const email = typeof order.userId === 'string' ? undefined : customer?.email
 
     if (!email) {
-      console.warn('[stripe-webhook] cannot send confirmation: order has no customer email', { orderId })
+      logger.warn('[stripe-webhook] cannot send confirmation: order has no customer email', { orderId })
       return
     }
 
@@ -714,7 +715,7 @@ export async function notifyCustomerPurchaseConfirmed(orderId: string) {
     })
   } catch (error) {
     // A confirmation-email failure must never break the payment flow itself.
-    console.error('[stripe-webhook] failed to send purchase confirmation', { orderId, error })
+    logger.error('[stripe-webhook] failed to send purchase confirmation', { orderId, error })
   }
 }
 

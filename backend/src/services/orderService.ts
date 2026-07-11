@@ -6,6 +6,7 @@ import { OrderModel } from '../models/Order'
 import { ProductModel } from '../models/Product'
 import { UserModel } from '../models/User'
 import { HttpError } from '../utils/httpError'
+import { logger } from '../utils/logger'
 import { canTransition, type OrderLifecycleStatus } from '../utils/orderStatus'
 import { dispatchNotification } from './notificationService'
 
@@ -218,7 +219,7 @@ async function recordStatusChange(
       metadata: { from, to },
     })
   } catch (error) {
-    console.error('[order-status] failed to write order history event', {
+    logger.error('[order-status] failed to write order history event', {
       orderId: order._id.toString(),
       from,
       to,
@@ -235,7 +236,7 @@ function notifyCustomerOrderShipped(
   const email = typeof order.userId === 'string' ? undefined : customer?.email
 
   if (!email) {
-    console.warn('[order-shipped] cannot notify: order has no customer email', {
+    logger.warn('[order-shipped] cannot notify: order has no customer email', {
       orderId: order._id.toString(),
     })
     return

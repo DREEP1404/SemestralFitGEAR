@@ -1,5 +1,6 @@
 import { ProductModel } from '../models/Product'
 import { UserModel } from '../models/User'
+import { logger } from '../utils/logger'
 import { dispatchNotification } from './notificationService'
 
 // HU-46: low-stock detection and alerting.
@@ -107,6 +108,6 @@ export async function notifyAdminsOfLowStockCrossing(
     }
   } catch (error) {
     // Alerting must never surface as an error to the stock-change path.
-    console.error('[lowStock] failed to notify admins of low-stock crossing', error)
+    logger.error('[lowStock] failed to notify admins of low-stock crossing', { error })
   }
 }
