@@ -1,8 +1,8 @@
 # Registro de MCPs — FITGEAR
 
-Explicaciones cortas de cada MCP tool construida para FITGEAR. Al terminar los 7,
-este documento sirve como material de referencia para la sustentación y como
-base para generar la documentación pública del servidor MCP.
+Explicaciones cortas de cada MCP tool construida para FITGEAR. Con las 12 tools
+construidas, este documento sirve como material de referencia para la sustentación
+y como base para generar la documentación pública del servidor MCP.
 
 Formato por entrada:
 - **Tool**, **HU envuelta**, **Rol**, **Rama**, **PR**, y una explicación breve.
@@ -317,6 +317,98 @@ usa el endpoint REST del panel. La máquina de estados
 adelante (`PAID` nunca es un destino manual: el pago viene de Stripe). Cada cambio
 se audita en `OrderEvent` con el admin que lo hizo, y pasar a `SHIPPED` dispara el
 email de notificación al cliente (HU-31).
+
+**Autenticación:** usa `requireAuthStrict` de `requireAuth.ts` (lanza sin JWT
+válido). Resuelve `clerkUserId → User` vía `UserModel` y **rechaza con 403** si
+`role !== 'ADMIN'`.
+
+**Cómo levantar el servidor MCP local:**
+
+```bash
+cd mcp-server
+MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
+```
+
+---
+
+## 10. `get_product_reviews`
+
+- **HU envuelta:** HU-49 — Reseñas de productos por compradores verificados
+- **Rol:** público (soft-auth)
+
+Herramienta MCP **pública** que devuelve las reseñas y el resumen de calificación de
+un producto por su `id`. Inputs: `productId` (ObjectId, requerido) y `token`
+(opcional). Devuelve `{ found: true, productId, summary, reviews }`, donde `summary`
+trae `count`, `averageRating` y la distribución por estrella (1–5), y cada reseña
+incluye `rating`, `comment`, `reviewerName` y `createdAt`. Si el producto no existe
+devuelve `{ found: false, productId, message }` sin propagar un stack. Útil para
+incluir señales de satisfacción en recomendaciones o análisis.
+
+**Reuso de código:** llama a `listProductReviews()` de
+`backend/src/services/reviewService.ts` — devuelve solo reseñas visibles/aprobadas
+(lectura pública), la misma lógica que respalda la vista de detalle de producto.
+
+**Autenticación:** pasa por `requireAuth.ts` (soft-auth): acepta `token` pero no lo
+exige, ya que es una lectura pública.
+
+**Cómo levantar el servidor MCP local:**
+
+```bash
+cd mcp-server
+MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
+```
+
+---
+
+## 11. `get_audit_log`
+
+- **HU envuelta:** HU-52 — Historial de auditoría de acciones admin
+- **Rol:** **admin** (strict-auth + rol ADMIN)
+
+Herramienta MCP **solo para administradores**, de **solo lectura**, sobre el
+historial de auditoría de acciones admin, para reportes de cumplimiento y detección
+de actividad sospechosa. Devuelve los registros más recientes primero — cada uno con
+el admin que actuó (`actorClerkId`, `actorEmail`), `action`, `entityType`,
+`entityId`, `changes` y `createdAt`. Filtros opcionales: `action`, `actor` (Clerk id
+o email), `entityType`, `dateFrom`, `dateTo` (`YYYY-MM-DD`) y `limit` (1–200,
+default 100).
+
+**Reuso de código:** llama a `listAuditLog()` de
+`backend/src/services/auditLogService.ts` — la misma consulta que respalda el
+endpoint REST `GET /api/admin/audit`, así el tool y el panel nunca divergen. Cada
+acción admin (REST y MCP) se registra vía `recordAuditAction`, y la colección
+`AuditLog` es inmutable (sin vías de escritura/edición/borrado expuestas).
+
+**Autenticación:** usa `requireAuthStrict` de `requireAuth.ts` (lanza sin JWT
+válido). Resuelve `clerkUserId → User` vía `UserModel` y **rechaza con 403** si
+`role !== 'ADMIN'`.
+
+**Cómo levantar el servidor MCP local:**
+
+```bash
+cd mcp-server
+MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
+```
+
+---
+
+## 12. `generate_inventory_report`
+
+- **HU envuelta:** HU-53 — Reporte de inventario exportable (CSV/PDF)
+- **Rol:** **admin** (strict-auth + rol ADMIN)
+
+Herramienta MCP **solo para administradores** que genera un reporte de inventario
+punto-en-el-tiempo, para análisis automatizado o para enviarlo a proveedores.
+Inputs: `token` (requerido) e `includeCsv` (opcional). Devuelve `generatedAt`, un
+`summary` (`productCount`, `totalUnits`, `totalInventoryValue`, `lowStockCount`) y
+una fila por producto (`name`, `category`, `stock`, `unitPrice`, `totalValue`, flag
+`lowStock`, `lowStockThreshold`, `isActive`). Con `includeCsv: true` adjunta además
+el reporte serializado como string CSV, listo para guardar/enviar.
+
+**Reuso de código:** llama a `buildInventoryReport()` de
+`backend/src/services/inventoryReportService.ts` y a `toInventoryCsv()` —
+exactamente lo que usa el endpoint REST `GET /api/admin/inventory-report` (que además
+sirve CSV y PDF descargables), así REST y MCP nunca divergen.
 
 **Autenticación:** usa `requireAuthStrict` de `requireAuth.ts` (lanza sin JWT
 válido). Resuelve `clerkUserId → User` vía `UserModel` y **rechaza con 403** si

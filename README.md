@@ -153,15 +153,20 @@ El backend queda en `http://localhost:4000` y MongoDB en el puerto `27017`. El f
 
 ## Funcionalidades principales
 
-- Catalogo de productos con busqueda, filtros y ordenamiento.
+- Catalogo de productos con busqueda, filtros, ordenamiento y autocompletado.
 - Fallback local de respaldo solo ante errores criticos.
 - Detalle de producto con informacion y relacionados.
+- Reseñas de productos por compradores verificados, con moderacion de administrador.
 - Carrito con ajuste de cantidades, subtotal, impuestos y envio.
 - Creacion de pedidos reales en backend.
-- Checkout con Stripe.
+- Checkout con Stripe, confirmacion de pago, envios y reembolsos.
 - Confirmacion de pago y actualizacion de estado del pedido.
 - Login y autenticacion con Clerk.
 - Panel de administracion para catalogo, usuarios y pedidos.
+- Alertas de stock bajo y notificaciones por email (SendGrid).
+- Historial de auditoria de acciones de administrador (solo lectura).
+- Reporte de inventario exportable en CSV y PDF.
+- Servidor MCP (Model Context Protocol) que expone la logica de negocio como herramientas para agentes.
 
 ## Integraciones
 
@@ -180,6 +185,10 @@ Persisten productos, categorias, usuarios, pedidos y eventos de webhook.
 ### API del backend
 
 El frontend consume la API mediante `src/api/apiClient.ts` y `src/api/fitgearApi.ts`, con base URL configurable por `VITE_API_BASE_URL`.
+
+### Servidor MCP
+
+El paquete `mcp-server/` expone la logica de negocio del backend como herramientas para agentes (Claude Code, Codex, etc.) sobre transporte stdio, reutilizando los services/models/middlewares de `backend/src/`. Cubre catalogo, ordenes, metricas, inventario, categorias, reseñas y auditoria. Detalle de cada tool en [`docs/mcp/registry.md`](docs/mcp/registry.md) y guia de uso en [`mcp-server/README.md`](mcp-server/README.md).
 
 ## Scripts disponibles
 
