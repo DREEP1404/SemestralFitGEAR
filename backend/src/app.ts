@@ -3,8 +3,10 @@ import { cors } from 'hono/cors'
 import path from 'node:path'
 import { env } from './config/env'
 import { stripeWebhookController } from './controllers/paymentController'
+import { accessLog } from './middlewares/accessLog'
 import { buildErrorResponse } from './middlewares/errorHandler'
 import { apiRouter } from './routes'
+import { logger } from './utils/logger'
 import { ensureUploadDirectories, uploadsRootPath } from './utils/uploadPaths'
 
 export type AppVariables = {
@@ -22,6 +24,10 @@ export type AppVariables = {
 export type AppEnv = { Variables: AppVariables }
 
 export const app = new Hono<AppEnv>()
+
+// Structured access log first, so every request — including 404s and errors — gets
+// exactly one request line with method/path/status/duration.
+app.use('*', accessLog())
 
 app.use(
   '*',
@@ -61,5 +67,14 @@ app.notFound((c) => {
 })
 
 app.onError((err, c) => {
+  // Acceptance criterion 2: an unhandled error must leave a server-side trace with
+  // the full stack. buildErrorResponse only shapes the CLIENT response (and hides
+  // the stack in prod) — it never logs. Log here, structured, before responding.
+  // The logger serializes the Error to { name, message, stack }.
+  logger.error('unhandled error', {
+    method: c.req.method,
+    path: c.req.path,
+    error: err,
+  })
   return buildErrorResponse(err, c)
 })
