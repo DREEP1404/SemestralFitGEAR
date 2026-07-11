@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { AuditLogModel } from '../models/AuditLog'
 import { UserModel } from '../models/User'
+import { logger } from '../utils/logger'
 
 // HU-52: the single write/read seam for the admin-action audit trail. Every
 // admin mutation records through recordAuditAction; the panel and the
@@ -51,7 +52,7 @@ export async function recordAuditAction(input: RecordAuditInput): Promise<void> 
       changes: input.changes,
     })
   } catch (error) {
-    console.error('[audit-log] failed to write audit record', {
+    logger.error('[audit-log] failed to write audit record', {
       action: input.action,
       entityType: input.entityType,
       entityId: input.entityId,
