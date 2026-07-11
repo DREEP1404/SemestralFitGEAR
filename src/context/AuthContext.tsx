@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react'
+import { useAuth as useClerkAuth, useUser } from '@clerk/tanstack-react-start'
 import {
   createContext,
   useContext,
@@ -25,7 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser()
   const { getToken } = useClerkAuth()
   const [backendUser, setBackendUser] = useState<BackendUser | null>(null)
-  const [syncing, setSyncing] = useState(false)
+  // Starts true (not false): once Clerk resolves with a signed-in user, this
+  // context's `isLoaded` must stay false until the sync effect below actually
+  // runs and either finishes or determines there's no user — otherwise there's
+  // a render where clerk isLoaded=true but syncing hasn't been set yet, making
+  // `isLoaded` (= clerkLoaded && !syncing) true with `role` still null. Guards
+  // like ProtectedGuard would read that as "loaded, not admin" and redirect
+  // before the real role ever loads.
+  const [syncing, setSyncing] = useState(true)
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Must run before the sync effect below so apiClient already has a token
@@ -89,9 +96,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoaded, user])
 
+  // Depends on `user`, not just `backendUser`: when `user` flips to null (sign
+  // out), `backendUser` isn't cleared until the effect above runs a render
+  // later — without this check, `role` would keep reporting the previous
+  // session's role for that one render. On a route like CustomerGuard's
+  // (isLoaded && isAdmin -> redirect to /admin), that stale true was enough
+  // to bounce a just-signed-out admin from "/" straight back to /admin.
   const role: UserRole | null = useMemo(() => {
+    if (!user) {
+      return null
+    }
     return backendUser?.role ?? null
-  }, [backendUser])
+  }, [backendUser, user])
 
   const value = useMemo(() => {
     return {

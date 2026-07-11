@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@tanstack/react-router'
 import { prefersReducedMotion } from '../lib/gsap'
 
 export interface HeroCarouselSlide {
@@ -94,7 +94,8 @@ export function HeroCarousel() {
           {SLIDES.map((slide, i) => (
             <Link
               key={slide.id}
-              to={`/shop?category=${encodeURIComponent(slide.category)}`}
+              to="/shop"
+              search={{ category: slide.category }}
               className="group relative block h-full w-full shrink-0"
               aria-hidden={i !== index}
               tabIndex={i === index ? 0 : -1}

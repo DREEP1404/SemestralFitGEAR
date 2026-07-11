@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { UserButton, useUser } from '@clerk/tanstack-react-start'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 
 export function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { isLoaded: clerkLoaded, isSignedIn } = useUser()
   const { isAdmin } = useAuth()
   const { items, openCart } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -20,7 +21,7 @@ export function Navbar() {
       window.location.assign(path)
       return
     }
-    navigate(path)
+    navigate({ to: path })
   }
 
   return (
@@ -41,43 +42,33 @@ export function Navbar() {
         <nav className="hidden md:flex flex-1 items-center gap-1 ml-6">
           {!isAdmin && (
             <>
-              <NavLink
+              <Link
                 to="/shop"
-                className={({ isActive }) =>
-                  `px-4 py-2 text-sm font-semibold transition rounded-full ${
-                    isActive
-                      ? 'text-lime-400'
-                      : 'text-slate-300 hover:text-white hover:bg-white/5'
-                  }`
-                }
+                className="px-4 py-2 text-sm font-semibold transition rounded-full"
+                activeProps={{ className: 'text-lime-400' }}
+                inactiveProps={{ className: 'text-slate-300 hover:text-white hover:bg-white/5' }}
               >
                 Shop
-              </NavLink>
-              <NavLink
+              </Link>
+              <Link
                 to="/orders"
-                className={({ isActive }) =>
-                  `px-4 py-2 text-sm font-semibold transition rounded-full ${
-                    isActive
-                      ? 'text-lime-400'
-                      : 'text-slate-300 hover:text-white hover:bg-white/5'
-                  }`
-                }
+                className="px-4 py-2 text-sm font-semibold transition rounded-full"
+                activeProps={{ className: 'text-lime-400' }}
+                inactiveProps={{ className: 'text-slate-300 hover:text-white hover:bg-white/5' }}
               >
                 Mis pedidos
-              </NavLink>
+              </Link>
             </>
           )}
           {isAdmin && (
-            <NavLink
+            <Link
               to="/admin"
-              className={({ isActive }) =>
-                `px-4 py-2 text-sm font-semibold transition rounded-full ${
-                  isActive ? 'text-red-400' : 'text-red-400/70 hover:text-red-400 hover:bg-red-500/10'
-                }`
-              }
+              className="px-4 py-2 text-sm font-semibold transition rounded-full"
+              activeProps={{ className: 'text-red-400' }}
+              inactiveProps={{ className: 'text-red-400/70 hover:text-red-400 hover:bg-red-500/10' }}
             >
               Admin Panel
-            </NavLink>
+            </Link>
           )}
         </nav>
 
@@ -85,15 +76,15 @@ export function Navbar() {
         <div className="flex items-center gap-2 ml-auto">
           {/* Shop link (mobile shortcut) */}
           {!isAdmin && (
-            <NavLink
+            <Link
               to="/shop"
               className="hidden sm:inline-flex md:hidden items-center gap-1.5 rounded-full bg-lime-400 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-lime-300"
             >
               Shop
-            </NavLink>
+            </Link>
           )}
 
-          <SignedOut>
+          {clerkLoaded && !isSignedIn ? (
             <button
               type="button"
               onClick={() => navigateTo('/login')}
@@ -109,9 +100,9 @@ export function Navbar() {
                 />
               </svg>
             </button>
-          </SignedOut>
+          ) : null}
 
-          <SignedIn>
+          {isSignedIn ? (
             <UserButton
               appearance={{
                 elements: {
@@ -120,7 +111,7 @@ export function Navbar() {
               }}
               userProfileUrl={isAdmin ? '/admin' : '/account'}
             />
-          </SignedIn>
+          ) : null}
 
           {!isAdmin && (
             <button

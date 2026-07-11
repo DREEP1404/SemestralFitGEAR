@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import path from 'node:path'
+import { env } from './config/env'
 import { stripeWebhookController } from './controllers/paymentController'
 import { buildErrorResponse } from './middlewares/errorHandler'
 import { apiRouter } from './routes'
@@ -25,7 +26,10 @@ export const app = new Hono<AppEnv>()
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    // Was hardcoded to the old Vite SPA port (5173); TanStack Start now serves
+    // the frontend on 3000. Derive from FRONTEND_URL (see config/env.ts) so
+    // this doesn't drift from the actual frontend port again.
+    origin: [env.frontendUrl, env.frontendUrl.replace('localhost', '127.0.0.1')],
     credentials: true,
   }),
 )

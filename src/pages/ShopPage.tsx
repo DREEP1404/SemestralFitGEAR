@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { gsap, useGSAP, prefersReducedMotion } from '../lib/gsap'
 import { ApiError } from '../api/apiClient'
 import { getCategories, getProducts } from '../api/fitgearApi'
@@ -28,11 +28,12 @@ const SEARCH_DEBOUNCE_MS = 350
 type PriceRange = 'all' | 'under20' | '20to50' | '50to100' | 'over100'
 
 export function ShopPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const search = useSearch({ strict: false }) as { category?: string; search?: string }
+  const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    searchParams.get('category')?.trim() || 'all',
+    search.category?.trim() || 'all',
   )
-  const [query, setQuery] = useState(searchParams.get('search') ?? '')
+  const [query, setQuery] = useState(search.search ?? '')
   const [debouncedQuery, setDebouncedQuery] = useState(query)
   const [sortBy, setSortBy] = useState<'featured' | 'priceAsc' | 'priceDesc'>('featured')
   const [priceRange, setPriceRange] = useState<PriceRange>('all')
@@ -156,15 +157,15 @@ export function ShopPage() {
         ? null
         : (activeCategories.find((category) => category.value === resolvedCategory)?.label ?? null)
 
-    const next = new URLSearchParams()
-    if (categoryLabel) {
-      next.set('category', categoryLabel)
-    }
-    if (query) {
-      next.set('search', query)
-    }
-    setSearchParams(next, { replace: true })
-  }, [resolvedCategory, query, activeCategories, setSearchParams])
+    navigate({
+      to: '.',
+      search: {
+        category: categoryLabel ?? undefined,
+        search: query || undefined,
+      },
+      replace: true,
+    })
+  }, [resolvedCategory, query, activeCategories, navigate])
 
   useEffect(() => {
     let active = true
