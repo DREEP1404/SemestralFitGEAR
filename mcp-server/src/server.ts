@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { connectDatabase } from '../../backend/src/config/db'
 import { generateInventoryReportTool } from './tools/generateInventoryReport'
 import { getAuditLogTool } from './tools/getAuditLog'
+import { runHealthCheckTool } from './tools/runHealthCheck'
 import { getLowStockAlertsTool } from './tools/getLowStockAlerts'
 import { getOrderStatusTool } from './tools/getOrderStatus'
 import { getProductDetailsTool } from './tools/getProductDetails'
@@ -54,6 +55,21 @@ server.registerTool(
     const results = await searchProductsTool(args)
     return {
       content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
+    }
+  },
+)
+
+server.registerTool(
+  'run_health_check',
+  {
+    description:
+      "Check FITGEAR's operational health before running other tools. PUBLIC — the only tool with NO authentication and no token input; call it with no arguments. Returns overall readiness plus per-dependency status for MongoDB and Stripe, the process uptime (seconds) and the service version. status is 'ready' only when both dependencies are up, otherwise 'not_ready'.",
+    inputSchema: {},
+  },
+  async (args) => {
+    const result = await runHealthCheckTool(args)
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     }
   },
 )
