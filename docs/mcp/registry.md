@@ -298,6 +298,42 @@ MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
 
 ---
 
+## 13. `run_health_check`
+
+- **HU envuelta:** HU-33 — Endpoints de health check
+- **Rol:** **público — SIN autenticación** (la primera y única tool sin auth)
+- **Rama:** `feature/hu33-health-check-endpoints`
+- **Issue / PR:** #35 → PR (contra `main`)
+
+Herramienta MCP **pública**: a diferencia de **todas** las demás tools (que exigen
+un JWT de Clerk válido y, las de admin, rol `ADMIN`), ésta **no requiere
+autenticación ni acepta un input `token`** — se llama sin argumentos. Permite a un
+agente verificar el estado operativo del sistema **antes** de ejecutar otras tools,
+facilitando diagnósticos automatizados. Devuelve la foto completa de readiness:
+`status` (`ready` solo si MongoDB **y** Stripe están arriba, si no `not_ready`),
+`dependencies.mongodb` y `dependencies.stripe` (cada uno `up`/`down` con `error`
+cuando aplica), `uptime` (segundos) y `version` del servicio.
+
+**Reuso de código:** llama a `getReadinessStatus()` de
+`backend/src/services/healthService.ts` — **la misma función** que respalda el
+endpoint REST `GET /api/ready` que usan los orquestadores, así REST y MCP nunca
+divergen. Las sondas de dependencia viven en `healthChecks.ts`
+(`mongoose.connection.readyState === 1` para MongoDB; una llamada real y liviana
+`stripe.balance.retrieve()` envuelta en try/catch para Stripe).
+
+**Autenticación:** **ninguna.** No pasa por `requireAuth`/`requireAuthStrict` ni
+resuelve rol — es intencionalmente público (criterio de aceptación: endpoints de
+health check públicos).
+
+**Cómo levantar el servidor MCP local:**
+
+```bash
+cd mcp-server
+MONGODB_URI=mongodb://127.0.0.1:27017/fitgear bun run start
+```
+
+---
+
 ## 8. `update_order_status`
 
 - **HU envuelta:** HU-42 — Cambio de estado de órdenes desde el admin
