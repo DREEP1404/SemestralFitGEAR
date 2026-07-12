@@ -39,8 +39,13 @@ describe('ErrorBoundary — state machine (HU-34/HU-36)', () => {
   })
 })
 
-describe('ErrorBoundary — resetKey recovery (HU-36)', () => {
-  test('clears the error when resetKey changes (navigation recovers the view)', () => {
+// Tests only the boundary's own contract: it clears ITS state when resetKey
+// changes. This does NOT guarantee the routed page fully recovers after an
+// in-app navigation — verified live in a real browser that TanStack Router can
+// keep showing the crashed page's fallback even once the URL has changed. The
+// "Recargar página" button (a real reload) is the reliable recovery path.
+describe('ErrorBoundary — resetKey clears its own state (best-effort, HU-36)', () => {
+  test('clears the error when resetKey changes', () => {
     const boundary = new ErrorBoundary({ children: null, resetKey: '/shop' })
     boundary.state = { hasError: true }
     const setState = vi.fn()

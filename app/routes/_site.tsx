@@ -80,8 +80,11 @@ function SiteChrome() {
         // Landing owns its full-bleed dark sections end to end.
         // HU-36: the ErrorBoundary wraps ONLY the routed page (<Outlet />), never
         // Navbar/Footer (rendered as siblings below), so a page-level crash shows
-        // the fallback WITH the site chrome intact (criterion 3). resetKey lets it
-        // recover when the user navigates away via the still-mounted chrome.
+        // the fallback WITH the site chrome intact (criterion 3) — verified live in
+        // a real browser, not just by unit test. resetKey is a best-effort reset on
+        // navigation, not a guaranteed one (TanStack Router doesn't always remount
+        // the routed page after an in-app nav away from a mid-error route) — the
+        // fallback's "Recargar página" button is the reliable recovery path.
         <main className="flex-1">
           <ErrorBoundary resetKey={location.pathname}>
             <Outlet />

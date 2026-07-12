@@ -3,10 +3,16 @@ import { posthog } from '../lib/posthog'
 
 interface Props {
   children: ReactNode
-  // HU-36: when this value changes, the boundary clears its error state. The inner
-  // boundaries in SiteChrome pass the current pathname, so navigating away from a
-  // crashed page (via the Navbar/Footer, which stay mounted) recovers the view
-  // without a full reload. The outer last-resort boundary in __root.tsx omits it.
+  // HU-36: when this value changes, the boundary clears its OWN error state (unit-
+  // tested below). The inner boundaries in SiteChrome pass the current pathname,
+  // intending navigation to recover the crashed view. In practice this is
+  // best-effort, NOT a guarantee: verified live (manual browser test, not just the
+  // unit tests) that TanStack Router doesn't always remount the routed component
+  // after an in-app Link/navigate() away from a page that's mid-error, so the old
+  // fallback can keep showing even once the URL has changed. The reliable recovery
+  // path is the "Recargar página" button below (a real reload always works — also
+  // verified live). Left in place since it's harmless and may help in less
+  // persistent failure cases; don't rely on it doing more than that.
   resetKey?: unknown
 }
 
@@ -28,8 +34,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props): void {
-    // Recover on navigation: once the route (resetKey) changes, drop the error so
-    // the newly-routed page renders instead of a stuck fallback.
+    // Clears this boundary's own error state once resetKey changes. Best-effort
+    // (see the Props comment above) — doesn't guarantee the routed page actually
+    // re-renders cleanly, since that also depends on the router.
     if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
       this.setState({ hasError: false })
     }
