@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { nitro } from 'nitro/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -19,6 +20,11 @@ export default defineConfig({
     tanstackStart({
       srcDirectory: 'app',
     }),
+    // Required for the Vercel deployment target (branch "desplegar" only —
+    // not needed for the Docker/Render target, which serves the build with
+    // `vite preview` instead). Vercel auto-detects TanStack Start + Nitro at
+    // build time with no further config. https://vercel.com/docs/frameworks/full-stack/tanstack-start
+    nitro(),
     // React's Vite plugin MUST come after TanStack Start's plugin.
     viteReact(),
     tailwindcss(),
