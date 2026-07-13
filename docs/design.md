@@ -112,15 +112,86 @@ Primitivas (`@theme`) → semánticas (`:root`). Los componentes eligen por
 | `--ease-in-out-athletic` | `cubic-bezier(0.65, 0, 0.35, 1)` | Movimientos simétricos |
 | `--ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Overshoot lúdico (usar con criterio) |
 
-### `prefers-reduced-motion` — punto único y centralizado
+### `prefers-reduced-motion` — un checkpoint por motor de animación
 
-Un solo bloque al final de `src/index.css` neutraliza **toda** animación/
-transición CSS y el scroll suave. El motion por JS (GSAP) lee el mismo ajuste
-del SO vía `prefersReducedMotion()` en `src/lib/gsap.ts`. **No** se maneja
-reduced-motion componente por componente. La **Parte 8 (#170)** construye los
-hooks de animación sobre estos tokens y debe respetar el mismo switch.
+No se maneja reduced-motion ad-hoc por componente. Hay **un punto central por
+cada motor** que la app usa (los tres leen el mismo ajuste del SO):
+
+| Motor | Checkpoint | Dónde |
+|-------|-----------|-------|
+| **CSS** (transiciones, keyframes) | bloque `@media (prefers-reduced-motion: reduce)` | `src/index.css` (Parte 1) — neutraliza toda transición/animación CSS y el scroll suave |
+| **GSAP** (scroll-reveal, stagger) | `prefersReducedMotion()` | `src/lib/gsap.ts` — lo llaman `useReveal` y `useStaggerIn` para salir temprano |
+| **Framer Motion** (mount/layout) | `<MotionConfig reducedMotion="user">` | `app/routes/_site.tsx` — desactiva las animaciones de transform de TODOS los componentes Framer, sin `useReducedMotion` por componente |
+
+> Ojo: el bloque CSS **no** afecta a Framer Motion (anima por JS inline, no por
+> transiciones CSS). Por eso Framer necesita su propio checkpoint (`MotionConfig`).
 
 ---
+
+## Lenguaje de animación (Parte 8 · #170)
+
+La Parte 1 definió los **tokens** de motion (arriba); esta parte define los
+**patrones** que los usan. Las Partes 3–7 *aplican* estos patrones, no inventan
+nuevos. Código compartido en `src/lib/motion.ts`, `src/hooks/useReveal.ts`,
+`src/hooks/useStaggerIn.ts` y `src/components/RouteTransition.tsx`.
+
+### Qué anima y qué no
+
+- **Solo `transform` y `opacity`.** Nunca `width`/`height`/`top`/`left`/`margin`
+  (disparan layout/reflow). La utilidad `transition` de Tailwind ya cubre solo
+  transform/color/shadow/opacity, así que úsala en vez de `transition-all`.
+- No pines capas GPU permanentes (`will-change`): emborronan fotos de producto en
+  pantallas Windows escaladas. GSAP hace `clearProps` tras asentarse por lo mismo.
+
+### Jerarquía (de más a menos prioritario)
+
+**Entrada > hover > transición de estado.** Una entrada (contenido que aparece)
+manda sobre un hover, y un hover sobre un cambio de estado menor. No animes tres
+cosas compitiendo en el mismo momento.
+
+### Qué token para qué interacción
+
+| Interacción | Duración | Easing |
+|-------------|----------|--------|
+| Hover / focus / estado pequeño | `--duration-fast` (180ms) | `ease-out-athletic` |
+| Entrada de contenido / hover-lift de card | `--duration-base` (260ms) | `ease-out-athletic` |
+| Drawer / modal / panel | `--duration-slow` (420ms) | `ease-out-athletic` |
+| Scroll-reveal (GSAP) | ~700ms | `power3.out` (equivalente nativo de la curva athletic) |
+
+### GSAP vs Framer Motion — cuándo usar cuál
+
+Regla (ya existente, ahora escrita): **el motor lo decide el tipo de animación, no
+la preferencia.**
+
+- **Framer Motion** → transiciones declarativas de mount/unmount y layout:
+  entradas de sección/página, drawers, listas con `AnimatePresence`.
+  (`CartDrawer`, `CartItem`, `OrderSummary`, checkout).
+- **GSAP** (`src/lib/gsap.ts` + hooks) → scroll-triggered y secuencias/timelines
+  complejas. (`HeroCarousel`, y los reveals/stagger de listas y grids).
+
+### Patrones reutilizables
+
+| Patrón | Dónde | Cuándo usarlo |
+|--------|-------|---------------|
+| **Scroll-reveal** | `useReveal(scopeRef)` | Elementos `[data-reveal]` que aparecen al hacer scroll (una vez). LA fuente de scroll-reveal — no crear otra. |
+| **Stagger en grid/lista** (re-anima por filtro/sort) | `useStaggerIn(scopeRef, { deps })` | Grids que se re-animan al cambiar filtros/página (ej. `ShopPage`). NO es scroll-triggered. |
+| **Stagger de lista (mount)** | `staggerContainer` + `staggerItem` (Framer) | Listas cortas que entran escalonadas al montar (ej. chips de reseña en checkout). |
+| **Entrada de sección/página** | `sectionEnter` (Framer) | Spread en un `motion.*`: `<motion.section {...sectionEnter}>`. |
+| **Hover-lift de card** | `hoverLift` (className) | Cards que se elevan al hover. CSS/`motion-safe:`, SSR-safe. Aplicado en `ProductCard`. |
+| **Transición de ruta** | `RouteTransition` | Envuelve el contenido ruteado (ver abajo). |
+
+### Transiciones de ruta — decisión
+
+Se añadió una transición de **entrada** (`RouteTransition`) en el layout `_site`,
+para las páginas contenidas (no la landing, que tiene su propia coreografía de
+scroll-reveal, ni el splash de admin). Es deliberadamente **enter-only y
+SSR-safe**: en el servidor y el primer paint del cliente renderiza el contenido
+en su estado final (`initial={false}`), así el HTML nunca sale oculto ni hay
+mismatch de hidratación; solo tras montar, en navegaciones reales del cliente,
+reproduce el fade-up. **No** se intenta animación de salida: TanStack Router
+desmonta la ruta saliente al navegar, así que sostenerla para un `exit` sería
+frágil — se descartó a propósito.
+
 
 ## Botones — vocabulario unificado
 
