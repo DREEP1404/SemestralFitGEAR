@@ -9,6 +9,7 @@ import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
 import { useCheckoutPaymentConfirmationQuery } from '../hooks/usePaymentQueries'
 import { queryKeys } from '../lib/queryKeys'
 import { Button } from '../components/ui/Button'
+import { CheckoutStatusHeader } from '../components/checkout/CheckoutStatusHeader'
 
 export function CheckoutSuccessPage() {
   const search = useSearch({ strict: false }) as { orderId?: string; session_id?: string }
@@ -109,14 +110,12 @@ export function CheckoutSuccessPage() {
         )}
       </div>
 
-      <p className="mt-6 text-xs font-bold uppercase tracking-[0.24em] text-lime-400">{badge}</p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">{title}</h1>
-      <p className="mt-3 text-slate-400">{description}</p>
-      {orderId ? (
-        <p className="mt-3 inline-block rounded-full bg-white/[0.04] px-3 py-1 font-mono text-xs text-slate-400">
-          Pedido: {orderId}
-        </p>
-      ) : null}
+      <CheckoutStatusHeader
+        badge={badge}
+        title={title}
+        description={description}
+        pillLabel={orderId ? `Pedido: ${orderId}` : undefined}
+      />
       {confirmationQuery.isLoading || confirmationQuery.isFetching ? (
         <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-slate-300">
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lime-400" aria-hidden />

@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext'
 import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
 import { queryKeys } from '../lib/queryKeys'
 import { getButtonClassName } from '../components/ui/Button'
+import { CheckoutStatusHeader } from '../components/checkout/CheckoutStatusHeader'
 
 export function CheckoutCancelPage() {
   const search = useSearch({ strict: false }) as { orderId?: string }
@@ -129,16 +130,13 @@ export function CheckoutCancelPage() {
         </svg>
       </div>
 
-      <p className="mt-6 text-xs font-bold uppercase tracking-[0.24em] text-slate-400">Pago cancelado</p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">No se completó el pago</h1>
-      <p className="mt-3 text-slate-400">
-        Tu pedido sigue pendiente. Puedes volver al carrito y reintentar cuando quieras.
-      </p>
-      {orderId ? (
-        <p className="mt-3 inline-block rounded-full bg-white/[0.04] px-3 py-1 font-mono text-xs text-slate-400">
-          Pedido pendiente: {orderId}
-        </p>
-      ) : null}
+      <CheckoutStatusHeader
+        badge="Pago cancelado"
+        badgeClassName="text-slate-400"
+        title="No se completó el pago"
+        description="Tu pedido sigue pendiente. Puedes volver al carrito y reintentar cuando quieras."
+        pillLabel={orderId ? `Pedido pendiente: ${orderId}` : undefined}
+      />
       {retryError ? (
         <p className="mt-5 rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {retryError}
