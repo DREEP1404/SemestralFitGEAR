@@ -5,6 +5,7 @@ import { GiftFinder } from '../components/GiftFinder'
 import { HeroCarousel } from '../components/HeroCarousel'
 import { Marquee } from '../components/Marquee'
 import { SectionDecor } from '../components/SectionDecor'
+import { Button, getButtonClassName } from '../components/ui/Button'
 import { useCart } from '../context/CartContext'
 import { useReveal } from '../hooks/useReveal'
 
@@ -103,20 +104,18 @@ export function LandingPage() {
             <div className="mt-9 flex flex-wrap justify-center gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-8 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_32px_-4px_rgba(163,230,53,0.55)]"
+                className={getButtonClassName({
+                  className: 'px-8 hover:shadow-[0_0_32px_-4px_rgba(163,230,53,0.55)]',
+                })}
               >
                 Ir a la tienda
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
-              <button
-                type="button"
-                onClick={openCart}
-                className="inline-flex rounded-full border border-white/15 px-8 py-3.5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5"
-              >
+              <Button variant="ghost" onClick={openCart} className="px-8">
                 Ver carrito
-              </button>
+              </Button>
             </div>
           </div>
         </div>
