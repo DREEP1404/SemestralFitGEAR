@@ -7,8 +7,6 @@ interface OrderSummaryProps {
   taxAmount: number
   shippingAmount: number
   total: number
-  checkoutPending: boolean
-  canReusePendingOrder: boolean
   checkoutError: string | null
   onCheckout: () => void
 }
@@ -19,8 +17,6 @@ export function OrderSummary({
   taxAmount,
   shippingAmount,
   total,
-  checkoutPending,
-  canReusePendingOrder,
   checkoutError,
   onCheckout,
 }: OrderSummaryProps) {
@@ -67,20 +63,10 @@ export function OrderSummary({
 
       <button
         type="button"
-        disabled={checkoutPending}
         onClick={onCheckout}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_28px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_28px_-6px_rgba(163,230,53,0.6)]"
       >
-        {checkoutPending ? (
-          <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/40 border-t-slate-900" aria-hidden />
-            Redirigiendo a Stripe...
-          </>
-        ) : canReusePendingOrder ? (
-          'Reintentar pago'
-        ) : (
-          'Pagar con tarjeta'
-        )}
+        Pagar con tarjeta
       </button>
 
       <AnimatePresence>

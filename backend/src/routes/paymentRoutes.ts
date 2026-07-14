@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
 import type { AppEnv } from '../app'
 import {
-  confirmCheckoutPaymentController,
-  createCheckoutSessionController,
+  confirmPaymentController,
+  createPaymentIntentController,
 } from '../controllers/paymentController'
 import { requireAuthMiddleware } from '../middlewares/requireAuth'
 import { validateBody } from '../middlewares/validate'
 import {
-  confirmCheckoutPaymentSchema,
-  createCheckoutSessionSchema,
+  confirmPaymentSchema,
+  createPaymentIntentSchema,
 } from '../validations/paymentValidation'
 
 export const paymentRouter = new Hono<AppEnv>()
@@ -18,13 +18,13 @@ export const paymentRouter = new Hono<AppEnv>()
 paymentRouter.use('*', requireAuthMiddleware())
 
 paymentRouter.post(
-  '/create-checkout-session',
-  validateBody(createCheckoutSessionSchema),
-  createCheckoutSessionController,
+  '/create-payment-intent',
+  validateBody(createPaymentIntentSchema),
+  createPaymentIntentController,
 )
 
 paymentRouter.post(
-  '/confirm-checkout-payment',
-  validateBody(confirmCheckoutPaymentSchema),
-  confirmCheckoutPaymentController,
+  '/confirm-payment',
+  validateBody(confirmPaymentSchema),
+  confirmPaymentController,
 )

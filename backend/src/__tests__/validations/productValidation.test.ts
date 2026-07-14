@@ -12,7 +12,7 @@ const validProduct = {
   description: 'High performance running shoes',
   price: 99.99,
   stock: 50,
-  imageUrl: '/uploads/products/shoes.jpg',
+  images: ['products/shoes-abc123'],
   categoryId: VALID_ID,
 }
 

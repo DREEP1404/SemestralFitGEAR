@@ -39,6 +39,11 @@ function SiteChrome() {
   const isLanding = location.pathname === '/'
   const isPostLogin = location.pathname === '/post-login'
   const isAdminPage = location.pathname.startsWith('/admin')
+  // Address + payment entry shouldn't compete with site chrome for attention
+  // (and shouldn't offer an easy scroll-away exit mid-payment) — deliberately
+  // scoped to exactly /checkout (not /checkout/success or /checkout/cancel,
+  // which aren't "the moment of paying").
+  const isCheckoutPage = location.pathname === '/checkout'
   const { isLoaded: authLoaded, isAdmin } = useAuth()
   // Admin role sync (backend) resolves after Clerk itself, so /admin briefly
   // renders with no known role yet — and after a logout, isAdmin flips false
@@ -61,7 +66,7 @@ function SiteChrome() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-      {isPostLogin || isAdminBooting ? null : <Navbar />}
+      {isPostLogin || isAdminBooting ? null : <Navbar minimal={isCheckoutPage} />}
 
       {isAdminBooting ? (
         <main className="flex flex-1 items-center justify-center">
@@ -107,7 +112,7 @@ function SiteChrome() {
         </main>
       )}
 
-      {isPostLogin || isAdminPage ? null : <Footer />}
+      {isPostLogin || isAdminPage || isCheckoutPage ? null : <Footer />}
       <CartDrawer />
     </div>
   )

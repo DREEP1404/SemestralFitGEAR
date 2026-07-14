@@ -4,7 +4,13 @@ import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 
-export function Navbar() {
+interface NavbarProps {
+  /** Logo only, no nav links/cart/account — for the checkout page, where the
+   * rest of the chrome is just distraction/exit points during payment. */
+  minimal?: boolean
+}
+
+export function Navbar({ minimal = false }: NavbarProps = {}) {
   const location = useLocation()
   const navigate = useNavigate()
   const { isLoaded: clerkLoaded, isSignedIn } = useUser()
@@ -22,6 +28,23 @@ export function Navbar() {
       return
     }
     navigate({ to: path })
+  }
+
+  if (minimal) {
+    return (
+      <header className="sticky top-0 z-50 bg-slate-950/92 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="mx-auto flex w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8 h-16">
+          <button
+            type="button"
+            onClick={() => navigateTo(homePath)}
+            className="shrink-0 cursor-pointer text-left text-xl font-black uppercase tracking-widest"
+          >
+            <span className="text-white">FIT</span>
+            <span className="text-lime-400">GEAR</span>
+          </button>
+        </div>
+      </header>
+    )
   }
 
   return (

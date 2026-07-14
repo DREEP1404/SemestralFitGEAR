@@ -1,24 +1,24 @@
 import type { Context } from 'hono'
 import type { AppEnv } from '../app'
 import {
-  confirmCheckoutPayment,
+  confirmPayment,
   constructWebhookEvent,
-  createCheckoutSession,
+  createPaymentIntent,
   handleStripeEvent,
 } from '../services/paymentService'
 
-export const createCheckoutSessionController = async (c: Context<AppEnv>) => {
+export const createPaymentIntentController = async (c: Context<AppEnv>) => {
   const { orderId } = c.get('validatedBody') as { orderId: string }
-  const session = await createCheckoutSession(orderId)
-  return c.json(session, 200)
+  const paymentIntent = await createPaymentIntent(orderId)
+  return c.json(paymentIntent, 200)
 }
 
-export const confirmCheckoutPaymentController = async (c: Context<AppEnv>) => {
-  const { orderId, sessionId } = c.get('validatedBody') as {
+export const confirmPaymentController = async (c: Context<AppEnv>) => {
+  const { orderId, paymentIntentId } = c.get('validatedBody') as {
     orderId: string
-    sessionId?: string
+    paymentIntentId?: string
   }
-  const result = await confirmCheckoutPayment(orderId, sessionId)
+  const result = await confirmPayment(orderId, paymentIntentId)
   return c.json(result, 200)
 }
 

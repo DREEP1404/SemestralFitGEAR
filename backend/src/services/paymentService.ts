@@ -19,9 +19,19 @@ import {
   type WebhookEventData,
 } from './webhookAuditService'
 
-interface CheckoutSessionResult {
-  sessionId: string
-  url: string
+interface PaymentIntentResult {
+  clientSecret: string
+  paymentIntentId: string
+  amount: number
+  // Breakdown of `amount`, in the same unit (cents) — lets the checkout UI
+  // show subtotal/tax/shipping instead of just the final total. Derived from
+  // the order's current items, not from Stripe (a reused PaymentIntent has no
+  // concept of this split), so it's attached by the caller in both the reuse
+  // and fresh-create paths below rather than returned by
+  // reuseExistingPaymentIntent itself.
+  subtotal: number
+  taxAmount: number
+  shippingAmount: number
 }
 
 interface PopulatedProductRef {
@@ -55,11 +65,6 @@ interface StockDecrementRecord {
 const TAX_RATE = 0.07
 const SHIPPING_FEE = 4.99
 
-// FITGEAR only ships within Panama today — restricting Stripe's own address
-// form to this country avoids collecting addresses that could never be
-// fulfilled.
-const SHIPPING_ALLOWED_COUNTRIES = ['PA'] as const
-
 interface OrderShippingAddress {
   name?: string
   line1?: string
@@ -70,24 +75,24 @@ interface OrderShippingAddress {
   country?: string
 }
 
-// Stripe returns the address collected by shipping_address_collection under
-// collected_information.shipping_details (not the older, deprecated
-// top-level shipping_details field). Drops nulls so the saved order only
-// carries fields Stripe actually filled in.
+// The embedded checkout collects shipping via Stripe's <AddressElement>, whose
+// value the client attaches to the PaymentIntent through confirmParams.shipping
+// on confirmPayment() — it lands on the PaymentIntent's own top-level `shipping`
+// field (unlike Checkout Session, which nested it under collected_information).
+// Drops nulls so the saved order only carries fields actually filled in.
 // Exported for unit testing the mapping in isolation.
-export function extractShippingAddress(
-  session: Pick<Stripe.Checkout.Session, 'collected_information'>,
+export function extractShippingAddressFromPaymentIntent(
+  paymentIntent: Pick<Stripe.PaymentIntent, 'shipping'>,
 ): OrderShippingAddress | undefined {
-  const shippingDetails = session.collected_information?.shipping_details
+  const shipping = paymentIntent.shipping
+  const address = shipping?.address
 
-  if (!shippingDetails) {
+  if (!shipping || !address) {
     return undefined
   }
 
-  const address = shippingDetails.address
-
   return {
-    name: shippingDetails.name ?? undefined,
+    name: shipping.name ?? undefined,
     line1: address.line1 ?? undefined,
     line2: address.line2 ?? undefined,
     city: address.city ?? undefined,
@@ -122,23 +127,65 @@ function toTaxAmount(amount: number) {
   return Math.round(amount * TAX_RATE * 100) / 100
 }
 
-function toAbsoluteImageUrl(imageUrl: string | undefined) {
-  if (!imageUrl) {
-    return undefined
-  }
+// A PaymentIntent in one of these statuses hasn't been charged yet and can be
+// safely reused (same client_secret) for a retry — avoids piling up orphaned
+// PaymentIntents every time the customer reopens /checkout for the same order.
+const REUSABLE_PAYMENT_INTENT_STATUSES = new Set([
+  'requires_payment_method',
+  'requires_confirmation',
+  'requires_action',
+])
 
-  if (/^https?:\/\//i.test(imageUrl)) {
-    return imageUrl
-  }
+// Kept in sync with the `payment_method_types` passed to
+// stripe.paymentIntents.create below. A PaymentIntent created before this
+// restriction existed (or via the old Checkout Session's automatic_payment_methods)
+// keeps whatever methods it was created with — Stripe doesn't retroactively
+// narrow them — so reuse must check this explicitly instead of assuming any
+// payable, amount-matching PaymentIntent is safe to reuse.
+const ALLOWED_PAYMENT_METHOD_TYPES = ['card']
 
-  if (imageUrl.startsWith('/')) {
-    return `${env.backendUrl}${imageUrl}`
-  }
-
-  return `${env.backendUrl}/${imageUrl}`
+function hasAllowedPaymentMethodTypes(types: string[]) {
+  return (
+    types.length === ALLOWED_PAYMENT_METHOD_TYPES.length &&
+    types.every((type) => ALLOWED_PAYMENT_METHOD_TYPES.includes(type))
+  )
 }
 
-export async function createCheckoutSession(orderId: string): Promise<CheckoutSessionResult> {
+// Omits the subtotal/tax/shipping breakdown: those come from the order's
+// current items, not from Stripe, so createPaymentIntent attaches them itself
+// once it decides whether to use this result or create a fresh PaymentIntent.
+async function reuseExistingPaymentIntent(
+  order: InstanceType<typeof OrderModel>,
+  amount: number,
+): Promise<Omit<PaymentIntentResult, 'subtotal' | 'taxAmount' | 'shippingAmount'> | null> {
+  if (!order.stripePaymentIntentId) {
+    return null
+  }
+
+  const stripe = getStripeClient()
+  const existing = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId)
+
+  // Only reuse if it's still payable, the amount still matches what we'd
+  // charge today, AND it offers exactly the payment methods we enable now —
+  // a stale PaymentIntent from before a stock/price change, or from before
+  // card-only was enforced, must not be silently reused.
+  if (
+    !REUSABLE_PAYMENT_INTENT_STATUSES.has(existing.status) ||
+    existing.amount !== amount ||
+    !existing.client_secret ||
+    !hasAllowedPaymentMethodTypes(existing.payment_method_types)
+  ) {
+    return null
+  }
+
+  return {
+    clientSecret: existing.client_secret,
+    paymentIntentId: existing.id,
+    amount: existing.amount,
+  }
+}
+
+export async function createPaymentIntent(orderId: string): Promise<PaymentIntentResult> {
   const stripe = getStripeClient()
 
   const order = await assertCustomerOrder(orderId)
@@ -153,148 +200,97 @@ export async function createCheckoutSession(orderId: string): Promise<CheckoutSe
 
   await ensureOrderHasAvailableStock(order._id.toString())
 
-  const items = await OrderItemModel.find({ orderId: order._id }).populate(
-    'productId',
-    'name images isActive',
-  )
+  const items = await OrderItemModel.find({ orderId: order._id }).select('unitPrice quantity')
 
   if (!items.length) {
     throw new HttpError(400, 'Order has no items')
   }
 
-  const lineItems = items.map((item) => {
-    const productRef = item.productId as unknown as PopulatedProductRef | null
-    const name =
-      typeof item.productId === 'string'
-        ? `Producto ${item.productId}`
-        : productRef?.name ?? 'Producto FITGEAR'
-
-    const images =
-      typeof item.productId === 'string'
-        ? []
-        : (productRef?.images ?? [])
-            .map((image) => toAbsoluteImageUrl(image))
-            .filter((image): image is string => Boolean(image))
-
-    return {
-      quantity: item.quantity,
-      price_data: {
-        currency: 'usd',
-        unit_amount: toStripeUnitAmount(item.unitPrice),
-        product_data: {
-          name,
-          images: images.length > 0 ? images : undefined,
-        },
-      },
-    }
-  })
-
   const subtotal = items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0)
   const taxAmount = toTaxAmount(subtotal)
   const shippingAmount = subtotal > 0 ? SHIPPING_FEE : 0
 
-  if (taxAmount > 0) {
-    lineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: 'usd',
-        unit_amount: toStripeUnitAmount(taxAmount),
-        product_data: {
-          name: `Impuesto (${Math.round(TAX_RATE * 100)}%)`,
-          images: undefined,
-        },
-      },
-    })
+  // Sum per-item rounded cents (matching how the old Checkout Session line
+  // items were built) rather than rounding a single float total — keeps this
+  // penny-exact with what CartContext/OrderSummary already show on screen.
+  const amount =
+    items.reduce((acc, item) => acc + toStripeUnitAmount(item.unitPrice) * item.quantity, 0) +
+    (taxAmount > 0 ? toStripeUnitAmount(taxAmount) : 0) +
+    (shippingAmount > 0 ? toStripeUnitAmount(shippingAmount) : 0)
+
+  const breakdown = {
+    subtotal: toStripeUnitAmount(subtotal),
+    taxAmount: toStripeUnitAmount(taxAmount),
+    shippingAmount: toStripeUnitAmount(shippingAmount),
   }
 
-  if (shippingAmount > 0) {
-    lineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: 'usd',
-        unit_amount: toStripeUnitAmount(shippingAmount),
-        product_data: {
-          name: 'Envío',
-          images: undefined,
-        },
-      },
-    })
+  const reused = await reuseExistingPaymentIntent(order, amount)
+  if (reused) {
+    return { ...reused, ...breakdown }
   }
 
   const userRef = order.userId as unknown as PopulatedOrderUserRef | string | null
   const customerEmail = typeof userRef === 'string' ? undefined : (userRef?.email ?? undefined)
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: lineItems,
-    success_url: `${env.frontendUrl}/checkout/success?orderId=${order._id.toString()}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.frontendUrl}/checkout/cancel?orderId=${order._id.toString()}`,
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: 'usd',
     metadata: {
       orderId: order._id.toString(),
     },
-    // Propagate orderId onto the PaymentIntent as well: Stripe does NOT copy the
-    // session metadata to the PaymentIntent, and payment_intent.payment_failed
-    // (HU-28) only carries the PaymentIntent — this is how we trace it back.
-    payment_intent_data: {
-      metadata: {
-        orderId: order._id.toString(),
-      },
-    },
-    client_reference_id: order._id.toString(),
-    customer_email: customerEmail,
-    shipping_address_collection: { allowed_countries: [...SHIPPING_ALLOWED_COUNTRIES] },
+    // Card only — automatic_payment_methods was also offering "Pay by Bank"
+    // and Klarna, which aren't wanted here.
+    payment_method_types: ALLOWED_PAYMENT_METHOD_TYPES,
+    receipt_email: customerEmail,
   })
 
   await OrderModel.findByIdAndUpdate(order._id, {
-    stripeCheckoutSessionId: session.id,
+    stripePaymentIntentId: paymentIntent.id,
     paymentProvider: 'STRIPE',
   })
 
-  if (!session.url) {
-    throw new HttpError(500, 'Failed to initialize Stripe checkout URL')
+  if (!paymentIntent.client_secret) {
+    throw new HttpError(500, 'Failed to initialize Stripe payment intent')
   }
 
   return {
-    sessionId: session.id,
-    url: session.url,
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+    amount,
+    ...breakdown,
   }
 }
 
-export async function confirmCheckoutPayment(orderId: string, sessionId?: string) {
+export async function confirmPayment(orderId: string, paymentIntentId?: string) {
   const order = await assertCustomerOrder(orderId)
 
   if (order.status === 'PAID') {
     return { status: 'PAID' as const }
   }
 
-  const resolvedSessionId = sessionId ?? order.stripeCheckoutSessionId
+  const resolvedPaymentIntentId = paymentIntentId ?? order.stripePaymentIntentId
 
-  if (!resolvedSessionId) {
-    throw new HttpError(400, 'Missing Stripe checkout session id for this order')
+  if (!resolvedPaymentIntentId) {
+    throw new HttpError(400, 'Missing Stripe payment intent id for this order')
   }
 
   const stripe = getStripeClient()
-  const session = await stripe.checkout.sessions.retrieve(resolvedSessionId)
+  const paymentIntent = await stripe.paymentIntents.retrieve(resolvedPaymentIntentId)
 
-  const referenceOrderId = session.metadata?.orderId ?? session.client_reference_id
+  const referenceOrderId = paymentIntent.metadata?.orderId
 
   if (referenceOrderId && referenceOrderId !== orderId) {
-    throw new HttpError(400, 'Checkout session does not belong to this order')
+    throw new HttpError(400, 'Payment intent does not belong to this order')
   }
 
-  const isPaid = session.payment_status === 'paid' || session.status === 'complete'
-
-  if (!isPaid) {
+  if (paymentIntent.status !== 'succeeded') {
     throw new HttpError(409, 'Payment is not confirmed yet')
   }
 
   await markOrderAsPaidAndDeductStock(
     orderId,
-    session.id,
-    typeof session.payment_intent === 'string'
-      ? session.payment_intent
-      : (session.payment_intent?.id ?? undefined),
-    extractShippingAddress(session),
+    paymentIntent.id,
+    extractShippingAddressFromPaymentIntent(paymentIntent),
   )
 
   return { status: 'PAID' as const }
@@ -570,8 +566,8 @@ export async function handleStripeEvent(event: Stripe.Event) {
     await markWebhookProcessing(event.id)
 
     switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event)
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event)
         break
       case 'payment_intent.payment_failed':
         await handlePaymentFailed(event)
@@ -602,20 +598,16 @@ export async function handleStripeEvent(event: Stripe.Event) {
 
 // Pulls the fields worth indexing in the audit log out of each event type.
 function extractWebhookData(event: Stripe.Event): WebhookEventData {
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent
     return {
-      orderId: session.metadata?.orderId ?? session.client_reference_id ?? undefined,
-      sessionId: session.id,
-      paymentIntentId:
-        typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : (session.payment_intent?.id ?? undefined),
-      customerEmail: session.customer_details?.email ?? session.customer_email ?? undefined,
-      amountTotal: session.amount_total ?? undefined,
-      currency: session.currency ?? undefined,
-      paymentStatus: session.payment_status ?? undefined,
-      rawObjectType: 'checkout.session',
+      orderId: paymentIntent.metadata?.orderId ?? undefined,
+      paymentIntentId: paymentIntent.id,
+      customerEmail: paymentIntent.receipt_email ?? undefined,
+      amountTotal: paymentIntent.amount ?? undefined,
+      currency: paymentIntent.currency ?? undefined,
+      paymentStatus: paymentIntent.status ?? undefined,
+      rawObjectType: 'payment_intent',
     }
   }
 
@@ -635,9 +627,9 @@ function extractWebhookData(event: Stripe.Event): WebhookEventData {
   return { rawObjectType: (event.data.object as { object?: string }).object }
 }
 
-async function handleCheckoutCompleted(event: Stripe.Event) {
-  const session = event.data.object as Stripe.Checkout.Session
-  const orderId = session.metadata?.orderId ?? session.client_reference_id
+async function handlePaymentIntentSucceeded(event: Stripe.Event) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent
+  const orderId = paymentIntent.metadata?.orderId
 
   if (!orderId) {
     return
@@ -645,11 +637,8 @@ async function handleCheckoutCompleted(event: Stripe.Event) {
 
   await markOrderAsPaidAndDeductStock(
     orderId,
-    session.id,
-    typeof session.payment_intent === 'string'
-      ? session.payment_intent
-      : (session.payment_intent?.id ?? undefined),
-    extractShippingAddress(session),
+    paymentIntent.id,
+    extractShippingAddressFromPaymentIntent(paymentIntent),
   )
 }
 
@@ -1088,8 +1077,7 @@ function dispatchLowStockAlerts(decrements: StockDecrementRecord[]) {
 
 async function markOrderAsPaidAndDeductStock(
   orderId: string,
-  stripeCheckoutSessionId: string,
-  stripePaymentIntentId?: string,
+  stripePaymentIntentId: string,
   shippingAddress?: OrderShippingAddress,
 ) {
   await assertCustomerOrder(orderId)
@@ -1102,7 +1090,6 @@ async function markOrderAsPaidAndDeductStock(
     session.startTransaction()
     const result = await markOrderAsPaidAndDeductStockWithSession(
       orderId,
-      stripeCheckoutSessionId,
       stripePaymentIntentId,
       shippingAddress,
       session,
@@ -1116,7 +1103,6 @@ async function markOrderAsPaidAndDeductStock(
     if (isTransactionUnsupportedError(error)) {
       const result = await markOrderAsPaidAndDeductStockFallback(
         orderId,
-        stripeCheckoutSessionId,
         stripePaymentIntentId,
         shippingAddress,
       )
@@ -1148,8 +1134,7 @@ async function markOrderAsPaidAndDeductStock(
 // whether to send the one-time purchase confirmation email (HU-30).
 async function markOrderAsPaidAndDeductStockWithSession(
   orderId: string,
-  stripeCheckoutSessionId: string,
-  stripePaymentIntentId: string | undefined,
+  stripePaymentIntentId: string,
   shippingAddress: OrderShippingAddress | undefined,
   session: ClientSession,
 ): Promise<{ transitioned: boolean; decrements: StockDecrementRecord[] }> {
@@ -1169,7 +1154,6 @@ async function markOrderAsPaidAndDeductStockWithSession(
 
   order.status = 'PAID'
   order.paymentProvider = 'STRIPE'
-  order.stripeCheckoutSessionId = stripeCheckoutSessionId
   order.stripePaymentIntentId = stripePaymentIntentId
   order.paidAt = new Date()
   if (shippingAddress) {
@@ -1184,8 +1168,7 @@ async function markOrderAsPaidAndDeductStockWithSession(
 // this call performed the transition (HU-30 confirmation email trigger).
 async function markOrderAsPaidAndDeductStockFallback(
   orderId: string,
-  stripeCheckoutSessionId: string,
-  stripePaymentIntentId?: string,
+  stripePaymentIntentId: string,
   shippingAddress?: OrderShippingAddress,
 ): Promise<{ transitioned: boolean; decrements: StockDecrementRecord[] }> {
   const order = await OrderModel.findById(orderId)
@@ -1222,7 +1205,6 @@ async function markOrderAsPaidAndDeductStockFallback(
 
     order.status = 'PAID'
     order.paymentProvider = 'STRIPE'
-    order.stripeCheckoutSessionId = stripeCheckoutSessionId
     order.stripePaymentIntentId = stripePaymentIntentId
     order.paidAt = new Date()
     if (shippingAddress) {
