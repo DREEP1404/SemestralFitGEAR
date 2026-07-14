@@ -39,12 +39,12 @@ test.describe('Customer account access', () => {
   })
 })
 
-test.describe('Order creation + Stripe checkout redirect', () => {
+test.describe('Order creation + embedded checkout', () => {
   test.beforeEach(() => {
     requireCustomerAccount()
   })
 
-  test('adds a real catalog product to the cart and reaches Stripe checkout', async ({ page }) => {
+  test('adds a real catalog product to the cart and reaches the embedded checkout', async ({ page }) => {
     await page.goto('/')
     await signInAs(page, customerEmail()!)
 
@@ -62,11 +62,19 @@ test.describe('Order creation + Stripe checkout redirect', () => {
     await page.getByRole('button', { name: 'Ver carrito' }).click()
 
     const drawer = page.getByRole('dialog', { name: 'Carrito de compras' })
-    const checkoutButton = drawer.getByRole('button', { name: /Pagar con tarjeta|Reintentar pago/ })
-    await checkoutButton.click()
+    await drawer.getByRole('button', { name: 'Pagar con tarjeta' }).click()
 
-    // A real order is created, then the app redirects the full page to Stripe's
-    // hosted checkout — assert the navigation actually leaves FITGEAR for it.
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20_000 })
+    // A real order + PaymentIntent are created, then the app navigates
+    // client-side to FITGEAR's own embedded checkout (no more leaving the
+    // site for a Stripe-hosted page) — assert we land there and Stripe's
+    // AddressElement (step 1 of the checkout) actually mounts inside it.
+    // The PaymentElement/"Pagar ahora" step only mounts after the address
+    // step's "Siguiente", which needs a filled Stripe AddressElement (out of
+    // scope for this spec) — reaching step 1 is what this test verifies.
+    await page.waitForURL(/\/checkout(\?|$)/, { timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Siguiente' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.frameLocator('iframe[name^="__privateStripeFrame"]').first().locator('body')).toBeVisible({
+      timeout: 10_000,
+    })
   })
 })

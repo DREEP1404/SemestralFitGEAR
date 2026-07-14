@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Link } from '@tanstack/react-router'
-import { createCheckoutSession, createOrder } from '../../api/fitgearApi'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
-import { queryKeys } from '../../lib/queryKeys'
 import { CartItem } from '../CartItem'
 import { OrderSummary } from './OrderSummary'
 
@@ -25,70 +22,24 @@ export function CartDrawer() {
     dismissRemovedNotice,
   } = useCart()
   const { backendUser } = useAuth()
-  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
-  const [pendingFingerprint, setPendingFingerprint] = useState<string | null>(null)
 
   const lineCount = useMemo(() => items.reduce((acc, item) => acc + item.quantity, 0), [items])
 
-  const cartFingerprint = useMemo(
-    () =>
-      items
-        .map((item) => `${item.product.id}:${item.size ?? ''}:${item.quantity}`)
-        .sort()
-        .join('|'),
-    [items],
-  )
+  // Order creation + PaymentIntent setup now happen on the /checkout page
+  // itself — this only needs to guard signed-out clicks (same inline message
+  // as before) before navigating there.
+  const handleCheckout = () => {
+    if (!backendUser) {
+      setCheckoutError('Debes iniciar sesion para crear una orden.')
+      return
+    }
 
-  const canReusePendingOrder = pendingOrderId !== null && pendingFingerprint === cartFingerprint
-
-  const checkoutMutation = useMutation({
-    mutationFn: async () => {
-      if (!backendUser) {
-        throw new Error('Debes iniciar sesion para crear una orden.')
-      }
-
-      const activeOrderId = canReusePendingOrder
-        ? pendingOrderId
-        : (
-            await createOrder({
-              userId: backendUser.id,
-              items: items.map((item) => ({
-                productId: item.product.id,
-                quantity: item.quantity,
-                size: item.size,
-              })),
-            })
-          ).id
-
-      if (!canReusePendingOrder) {
-        setPendingOrderId(activeOrderId)
-        setPendingFingerprint(cartFingerprint)
-      }
-
-      return createCheckoutSession({ orderId: activeOrderId })
-    },
-    onMutate: () => {
-      setCheckoutError(null)
-    },
-    onSuccess: async (session) => {
-      if (backendUser?.id) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.orders.byUser(backendUser.id),
-        })
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.cart.all,
-      })
-
-      window.location.assign(session.url)
-    },
-    onError: (error: unknown) => {
-      setCheckoutError(error instanceof Error ? error.message : 'No se pudo crear la orden.')
-    },
-  })
+    setCheckoutError(null)
+    closeCart()
+    void navigate({ to: '/checkout' })
+  }
 
   // Escape closes the drawer.
   useEffect(() => {
@@ -233,10 +184,8 @@ export function CartDrawer() {
                     taxAmount={taxAmount}
                     shippingAmount={shippingAmount}
                     total={total}
-                    checkoutPending={checkoutMutation.isPending}
-                    canReusePendingOrder={canReusePendingOrder}
                     checkoutError={checkoutError}
-                    onCheckout={() => checkoutMutation.mutate()}
+                    onCheckout={handleCheckout}
                   />
                 </div>
               </>

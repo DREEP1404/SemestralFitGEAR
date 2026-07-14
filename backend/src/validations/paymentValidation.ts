@@ -1,16 +1,16 @@
 import { z } from 'zod'
 import { objectIdSchema } from './commonValidation'
 
-export const createCheckoutSessionSchema = z.object({
+export const createPaymentIntentSchema = z.object({
   orderId: objectIdSchema,
 })
 
-export const confirmCheckoutPaymentSchema = z.object({
+export const confirmPaymentSchema = z.object({
   orderId: objectIdSchema,
-  sessionId: z
+  paymentIntentId: z
     .string()
     .trim()
-    .min(1, 'sessionId cannot be empty')
-    .max(500, 'sessionId is too long')
+    .min(1, 'paymentIntentId cannot be empty')
+    .max(500, 'paymentIntentId is too long')
     .optional(),
 })

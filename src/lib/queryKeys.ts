@@ -8,7 +8,7 @@ export const queryKeys = {
     all: ['cart'] as const,
   },
   payments: {
-    confirmation: (orderId: string, sessionId: string) =>
-      ['payments', 'confirmation', orderId, sessionId] as const,
+    confirmation: (orderId: string, paymentIntentId: string) =>
+      ['payments', 'confirmation', orderId, paymentIntentId] as const,
   },
 }
