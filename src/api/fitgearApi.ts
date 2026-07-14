@@ -632,24 +632,28 @@ export async function updateOrderStatus(
   return mapOrder(order)
 }
 
-interface CheckoutSessionResponse {
-  sessionId: string
-  url: string
+interface CreatePaymentIntentResponse {
+  clientSecret: string
+  paymentIntentId: string
+  amount: number
+  subtotal: number
+  taxAmount: number
+  shippingAmount: number
 }
 
-interface ConfirmCheckoutPaymentResponse {
+interface ConfirmPaymentResponse {
   status: 'PAID'
 }
 
-export async function createCheckoutSession(payload: { orderId: string }) {
-  return apiRequest<CheckoutSessionResponse>('/payments/create-checkout-session', {
+export async function createPaymentIntent(payload: { orderId: string }) {
+  return apiRequest<CreatePaymentIntentResponse>('/payments/create-payment-intent', {
     method: 'POST',
     body: payload,
   })
 }
 
-export async function confirmCheckoutPayment(payload: { orderId: string; sessionId?: string }) {
-  return apiRequest<ConfirmCheckoutPaymentResponse>('/payments/confirm-checkout-payment', {
+export async function confirmPayment(payload: { orderId: string; paymentIntentId?: string }) {
+  return apiRequest<ConfirmPaymentResponse>('/payments/confirm-payment', {
     method: 'POST',
     body: payload,
   })

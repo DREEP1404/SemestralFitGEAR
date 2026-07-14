@@ -55,6 +55,7 @@ services:
         # la red interna de Docker (por eso localhost:4000, no backend:4000).
         VITE_API_BASE_URL: http://localhost:4000/api
         VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY}
         VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY}
         VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST}
     container_name: fitgear-frontend

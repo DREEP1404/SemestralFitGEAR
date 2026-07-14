@@ -104,7 +104,10 @@ describe('refundOrder (HU-29)', () => {
       mockSave.mockClear()
       fakeOrder.status = status
 
-      await refundOrder('order_abcdef', {})
+      // SHIPPED requires a reason (see paymentService.ts's "already shipped"
+      // guard) — DELIVERED doesn't, but passing one for both keeps this loop
+      // uniform instead of branching per status.
+      await refundOrder('order_abcdef', { reason: 'Producto defectuoso' })
 
       expect(mockRefundCreate).toHaveBeenCalledTimes(1)
       expect(fakeOrder.status).toBe('REFUNDED')

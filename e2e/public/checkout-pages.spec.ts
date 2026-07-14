@@ -35,7 +35,7 @@ test.describe('Checkout success page', () => {
       },
     })
 
-    await page.goto('/checkout/success?orderId=order-paid&session_id=cs_test_123')
+    await page.goto('/checkout/success?orderId=order-paid&payment_intent=pi_test_123')
 
     await expect(page.getByRole('heading', { name: 'Gracias por tu compra' })).toBeVisible()
     await expect(page.getByText('Pago confirmado')).toBeVisible()
@@ -49,7 +49,7 @@ test.describe('Checkout success page', () => {
   test('shows a pending-confirmation state while Stripe is still settling', async ({ page }) => {
     await mockCheckout(page, { confirmPayment: 'pending' })
 
-    await page.goto('/checkout/success?orderId=order-pending&session_id=cs_test_456')
+    await page.goto('/checkout/success?orderId=order-pending&payment_intent=pi_test_456')
 
     await expect(page.getByRole('heading', { name: 'Estamos validando tu pago' })).toBeVisible({
       timeout: 10_000, // the confirmation query retries a 409 up to 3x with backoff

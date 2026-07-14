@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { cancelOrder, createCheckoutSession, selfRefundOrder } from '../../api/fitgearApi'
+import { useNavigate } from '@tanstack/react-router'
+import { cancelOrder, selfRefundOrder } from '../../api/fitgearApi'
 import { useAuth } from '../../context/AuthContext'
 import { queryKeys } from '../../lib/queryKeys'
 import type { BackendOrder } from '../../types'
@@ -79,6 +80,7 @@ export function OrderCard({ order }: OrderCardProps) {
   const [expanded, setExpanded] = useState(false)
   const { backendUser } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const totalProducts = useMemo(
     () => order.items.reduce((acc, item) => acc + item.quantity, 0),
@@ -101,12 +103,9 @@ export function OrderCard({ order }: OrderCardProps) {
     await queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(order.id) })
   }
 
-  const retryCheckoutMutation = useMutation({
-    mutationFn: () => createCheckoutSession({ orderId: order.id }),
-    onSuccess: (session) => {
-      window.location.assign(session.url)
-    },
-  })
+  const handleRetryPayment = () => {
+    void navigate({ to: '/checkout', search: { orderId: order.id } })
+  }
 
   const cancelOrderMutation = useMutation({
     mutationFn: () => cancelOrder(order.id),
@@ -123,7 +122,6 @@ export function OrderCard({ order }: OrderCardProps) {
     },
   })
 
-  const retryError = mutationErrorMessage(retryCheckoutMutation.error, 'No se pudo reintentar el pago.')
   const cancelError = mutationErrorMessage(cancelOrderMutation.error, 'No se pudo cancelar la orden.')
 
   return (
@@ -174,21 +172,20 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/[0.07] pt-4">
           <button
             type="button"
-            disabled={retryCheckoutMutation.isPending || cancelOrderMutation.isPending}
-            onClick={() => retryCheckoutMutation.mutate()}
+            disabled={cancelOrderMutation.isPending}
+            onClick={handleRetryPayment}
             className="inline-flex items-center gap-1.5 rounded-full bg-lime-400 px-4 py-2 text-xs font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           >
-            {retryCheckoutMutation.isPending ? 'Reintentando pago...' : 'Reintentar pago'}
+            Reintentar pago
           </button>
           <button
             type="button"
-            disabled={retryCheckoutMutation.isPending || cancelOrderMutation.isPending}
+            disabled={cancelOrderMutation.isPending}
             onClick={() => cancelOrderMutation.mutate()}
             className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/30 px-4 py-2 text-xs font-semibold text-rose-300 transition hover:border-rose-400/60 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-slate-500"
           >
             {cancelOrderMutation.isPending ? 'Cancelando orden...' : 'Cancelar orden'}
           </button>
-          {retryError ? <p className="w-full text-xs text-rose-300">{retryError}</p> : null}
           {cancelError ? <p className="w-full text-xs text-rose-300">{cancelError}</p> : null}
         </div>
       ) : null}

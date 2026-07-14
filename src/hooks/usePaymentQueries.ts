@@ -1,22 +1,23 @@
 import { useQuery } from '@tanstack/react-query'
 import { ApiError } from '../api/apiClient'
-import { confirmCheckoutPayment } from '../api/fitgearApi'
+import { confirmPayment } from '../api/fitgearApi'
 import { queryKeys } from '../lib/queryKeys'
 
 const PAYMENT_CONFIRMATION_RETRYABLE_STATUS = 409
 
 // `authReady` gates the query until Clerk has resolved the session and the
-// auth-token getter is registered (AuthContext). Stripe redirects back to the
-// success page as a full page load, so without this gate the confirmation
-// request fires before the token exists and the backend answers 401
-// ("No se proporciono token de autenticacion").
-export function useCheckoutPaymentConfirmationQuery(
+// auth-token getter is registered (AuthContext). The embedded checkout
+// confirms in-page most of the time (no gate needed there — see
+// CheckoutForm), but the rare case that still needs a Stripe redirect (e.g. a
+// payment method requiring one despite allow_redirects:'never') lands here via
+// a full page load, so this gate stays as a safety net.
+export function usePaymentConfirmationQuery(
   orderId: string | null,
-  sessionId: string | null,
+  paymentIntentId: string | null,
   authReady: boolean,
 ) {
   return useQuery({
-    queryKey: queryKeys.payments.confirmation(orderId ?? 'unknown', sessionId ?? 'none'),
+    queryKey: queryKeys.payments.confirmation(orderId ?? 'unknown', paymentIntentId ?? 'none'),
     enabled: Boolean(orderId) && authReady,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 30,
@@ -32,9 +33,9 @@ export function useCheckoutPaymentConfirmationQuery(
     },
     retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000),
     queryFn: () =>
-      confirmCheckoutPayment({
+      confirmPayment({
         orderId: orderId!,
-        sessionId: sessionId ?? undefined,
+        paymentIntentId: paymentIntentId ?? undefined,
       }),
   })
 }

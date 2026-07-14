@@ -1,7 +1,7 @@
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { cancelOrder, createCheckoutSession } from '../api/fitgearApi'
+import { cancelOrder } from '../api/fitgearApi'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
@@ -13,6 +13,7 @@ export function CheckoutCancelPage() {
   const { backendUser, isLoaded } = useAuth()
   const { openCart } = useCart()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   // Gate on isLoaded: the cancel page is also reached via a full-page Stripe
   // redirect, so the order lookup must wait until the auth token is ready.
@@ -20,34 +21,11 @@ export function CheckoutCancelPage() {
 
   const canRetryPayment = orderQuery.data?.status === 'PENDING'
 
-  const retryCheckoutMutation = useMutation({
-    mutationFn: async () => {
-      if (!orderId) {
-        throw new Error('No se encontro la orden para reintentar el pago.')
-      }
-
-      if (orderQuery.data?.status !== 'PENDING') {
-        throw new Error('Solo se puede reintentar el pago para ordenes en estado PENDING.')
-      }
-
-      return createCheckoutSession({ orderId })
-    },
-    onSuccess: async (session) => {
-      if (backendUser?.id) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.orders.byUser(backendUser.id),
-        })
-      }
-
-      if (orderId) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.orders.detail(orderId),
-        })
-      }
-
-      window.location.assign(session.url)
-    },
-  })
+  const handleRetryPayment = () => {
+    if (orderId) {
+      void navigate({ to: '/checkout', search: { orderId } })
+    }
+  }
 
   const cancelOrderMutation = useMutation({
     mutationFn: async () => {
@@ -76,13 +54,6 @@ export function CheckoutCancelPage() {
     },
   })
 
-  const retryError =
-    retryCheckoutMutation.error instanceof Error
-      ? retryCheckoutMutation.error.message
-      : retryCheckoutMutation.error
-        ? 'No se pudo reintentar el pago.'
-        : null
-
   const cancelError =
     cancelOrderMutation.error instanceof Error
       ? cancelOrderMutation.error.message
@@ -102,7 +73,6 @@ export function CheckoutCancelPage() {
   const retryDisabled =
     !orderId ||
     !canRetryPayment ||
-    retryCheckoutMutation.isPending ||
     cancelOrderMutation.isPending ||
     orderQuery.isLoading ||
     orderQuery.isFetching
@@ -110,7 +80,6 @@ export function CheckoutCancelPage() {
   const cancelDisabled =
     !orderId ||
     !canRetryPayment ||
-    retryCheckoutMutation.isPending ||
     cancelOrderMutation.isPending ||
     orderQuery.isLoading ||
     orderQuery.isFetching
@@ -138,11 +107,6 @@ export function CheckoutCancelPage() {
           Orden pendiente: {orderId}
         </p>
       ) : null}
-      {retryError ? (
-        <p className="mt-5 rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {retryError}
-        </p>
-      ) : null}
       {cancelError ? (
         <p className="mt-5 rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {cancelError}
@@ -157,10 +121,10 @@ export function CheckoutCancelPage() {
         <button
           type="button"
           disabled={retryDisabled}
-          onClick={() => retryCheckoutMutation.mutate()}
+          onClick={handleRetryPayment}
           className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
-          {retryCheckoutMutation.isPending ? 'Reintentando pago...' : 'Reintentar pago'}
+          Reintentar pago
         </button>
         <button
           type="button"

@@ -6,18 +6,18 @@ import { ApiError } from '../api/apiClient'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useOrderDetailQuery } from '../hooks/useOrdersQueries'
-import { useCheckoutPaymentConfirmationQuery } from '../hooks/usePaymentQueries'
+import { usePaymentConfirmationQuery } from '../hooks/usePaymentQueries'
 import { queryKeys } from '../lib/queryKeys'
 
 export function CheckoutSuccessPage() {
-  const search = useSearch({ strict: false }) as { orderId?: string; session_id?: string }
+  const search = useSearch({ strict: false }) as { orderId?: string; payment_intent?: string }
   const orderId = search.orderId ?? null
-  const sessionId = search.session_id ?? null
+  const paymentIntentId = search.payment_intent ?? null
   const { backendUser, isLoaded } = useAuth()
   const { clearCart } = useCart()
   const queryClient = useQueryClient()
 
-  const confirmationQuery = useCheckoutPaymentConfirmationQuery(orderId, sessionId, isLoaded)
+  const confirmationQuery = usePaymentConfirmationQuery(orderId, paymentIntentId, isLoaded)
 
   const isPaid = confirmationQuery.data?.status === 'PAID'
   const isPendingConfirmation =

@@ -98,7 +98,7 @@ export interface MockCheckoutOptions {
   /** GET /orders/:id responses, keyed by orderId. */
   orders?: Record<string, MockOrder>
   /**
-   * POST /payments/confirm-checkout-payment behavior. `'paid'` returns 200
+   * POST /payments/confirm-payment behavior. `'paid'` returns 200
    * {status:'PAID'}; `'pending'` returns 409 (the app's "still confirming
    * with Stripe" state, matching the real backend's retryable response).
    */
@@ -118,7 +118,13 @@ export async function mockCheckout(page: Page, options: MockCheckoutOptions = {}
     const path = url.pathname.replace(/^\/api/, '')
     const method = request.method()
 
-    if (path === '/payments/confirm-checkout-payment' && method === 'POST') {
+    if (path === '/payments/create-payment-intent' && method === 'POST') {
+      return route.fulfill({
+        json: { clientSecret: 'pi_test_secret_e2e', paymentIntentId: 'pi_test_e2e', amount: 8999 },
+      })
+    }
+
+    if (path === '/payments/confirm-payment' && method === 'POST') {
       if (confirmPayment === 'paid') {
         return route.fulfill({ json: { status: 'PAID' } })
       }
