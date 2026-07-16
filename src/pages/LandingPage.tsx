@@ -92,7 +92,7 @@ export function LandingPage() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
               FITGEAR Store
             </p>
-            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-bold tracking-tight text-white md:text-5xl">
+            <h2 className="font-display mx-auto mt-4 max-w-2xl text-display-md font-black text-white">
               Todo para tu entrenamiento,
               <br />
               <span className="text-lime-400">en un solo lugar</span>

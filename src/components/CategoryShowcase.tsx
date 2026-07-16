@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { getCategories, getProducts } from '../api/fitgearApi'
+import { hoverLift } from '../lib/motion'
 import type { Product } from '../types'
 import { formatCurrency } from '../utils/format'
 
@@ -113,7 +114,7 @@ export function CategoryShowcase() {
       <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div data-reveal className="mb-10">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Destacado</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white md:text-4xl">
+          <h2 className="font-display mt-3 text-display-sm font-black text-white">
             Compra por categoría
           </h2>
         </div>
@@ -176,7 +177,7 @@ export function CategoryShowcase() {
                       data-reveal
                       to="/product/$id"
                       params={{ id: product.id }}
-                      className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900 transition duration-300 hover:-translate-y-1 hover:border-lime-400/30 hover:shadow-[0_20px_40px_-24px_rgba(163,230,53,0.3)]"
+                      className={`group flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900 ${hoverLift} hover:border-lime-400/30 hover:shadow-[0_20px_40px_-24px_rgba(163,230,53,0.3)]`}
                     >
                       <div className="flex aspect-square items-center justify-center bg-gradient-to-b from-white to-slate-100 p-3">
                         <img
