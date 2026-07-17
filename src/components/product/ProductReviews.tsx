@@ -11,10 +11,10 @@ const STAR_LEVELS = ['5', '4', '3', '2', '1'] as const
 function RatingDistribution({
   distribution,
   total,
-}: {
+}: Readonly<{
   distribution: ProductReviewSummary['distribution']
   total: number
-}) {
+}>) {
   return (
     <div className="w-full min-w-[13rem] space-y-1.5 sm:w-56">
       {STAR_LEVELS.map((star) => {

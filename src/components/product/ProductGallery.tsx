@@ -62,8 +62,9 @@ export function ProductGallery({ images, alt }: Readonly<ProductGalleryProps>) {
       if (focusable.length === 0) {
         return
       }
+      // `focusable.length === 0` already returned above, so both ends exist.
       const first = focusable[0]
-      const last = focusable[focusable.length - 1]
+      const last = focusable.at(-1)!
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
         last.focus()
