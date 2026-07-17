@@ -65,7 +65,19 @@ function SiteChrome() {
   }, [location.pathname, closeCart])
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+    <div
+      className={
+        // `flex-1` on the admin <main> below relies on `flex-basis: 0` to size
+        // itself via flex-grow — which means its own `h-dvh` is ignored by the
+        // flex algorithm unless THIS container has a definite height (not just
+        // a min-height floor) to distribute. Without a real ceiling here, main
+        // — and the whole document — just grows to fit content, and the
+        // "only the white pane scrolls" shell silently stops working.
+        isAdminPage
+          ? 'flex min-h-screen flex-col bg-slate-950 text-slate-100 sm:h-dvh sm:overflow-hidden'
+          : 'flex min-h-screen flex-col bg-slate-950 text-slate-100'
+      }
+    >
       {isPostLogin || isAdminBooting || isAdminPage ? null : <Navbar minimal={isCheckoutPage} />}
 
       {isAdminBooting ? (
