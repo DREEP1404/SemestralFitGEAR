@@ -66,7 +66,7 @@ function SiteChrome() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-      {isPostLogin || isAdminBooting ? null : <Navbar minimal={isCheckoutPage} />}
+      {isPostLogin || isAdminBooting || isAdminPage ? null : <Navbar minimal={isCheckoutPage} />}
 
       {isAdminBooting ? (
         <main className="flex flex-1 items-center justify-center">
@@ -97,13 +97,14 @@ function SiteChrome() {
         </main>
       ) : (
         // Every other page: contained, dark surface. Admin is the one
-        // exception — height-capped to the viewport (minus the h-16 navbar)
-        // and non-scrolling at lg+, so AdminSidebar can stay fixed while only
+        // exception — no shared Navbar (AdminSidebar owns its own logo/account
+        // instead, see AdminSidebar.tsx), height-capped to the full viewport
+        // and non-scrolling at lg+, so the sidebar can stay fixed while only
         // its own content pane scrolls. Below lg it falls back to normal
         // document flow (stacked sidebar + content, whole page scrolls) —
         // the fixed-shell pattern is desktop-oriented by nature, same as the
         // reference dashboard this was modeled on.
-        <main className={isAdminPage ? 'flex-1 lg:h-[calc(100dvh-4rem)] lg:overflow-hidden' : 'flex-1'}>
+        <main className={isAdminPage ? 'flex-1 lg:h-dvh lg:overflow-hidden' : 'flex-1'}>
           <div
             className={
               isAdminPage

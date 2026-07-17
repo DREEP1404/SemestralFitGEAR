@@ -40,12 +40,6 @@ const palette = {
   'emerald-500': '#10b981',
   'emerald-600': '#059669',
   'emerald-700': '#047857',
-  'emerald-950': '#022c22',
-  // text-emerald-100/70 sobre bg-emerald-950: color ya compuesto (alpha-blend
-  // manual, 70% opacidad de #d1fae5 sobre #022c22) porque el script no
-  // resuelve alpha — la clase real del sidebar es la de arriba, esto es solo
-  // el resultado plano para poder medirlo.
-  'emerald-100/70-flat': '#93bcab',
   'amber-50': '#fffbeb',
   'amber-500': '#f59e0b',
   'amber-600': '#d97706',
@@ -114,8 +108,12 @@ const pairs = [
   ['teal-700', 'teal-50'], // badge DELIVERED
   ['fuchsia-700', 'fuchsia-50'], // badge REFUNDED
   ['violet-700', 'violet-50'], // badge USER (auditoría)
-  ['emerald-950', 'emerald-500'], // sidebar: item activo
-  ['emerald-100/70-flat', 'emerald-950'], // sidebar: item inactivo
+  // Sidebar del admin: azul oscuro + verde neón — reusa la paleta dark+lima
+  // de siempre (slate-950/lime-400), ya cubierta arriba (lime-400 sobre
+  // slate-950, slate-900 sobre lime-400). Solo falta el ítem activo con
+  // slate-950 exacto sobre lime-400 (más oscuro que slate-900, así que pasa
+  // con más margen todavía).
+  ['slate-950', 'lime-400'],
 ]
 
 // --- WCAG 2.1 relative luminance + contrast ratio ---

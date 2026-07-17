@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { UserButton, useUser } from '@clerk/tanstack-react-start'
+import { Link } from '@tanstack/react-router'
 
 type AdminSection =
   | 'overview'
@@ -101,13 +103,26 @@ function SectionIcon({ section }: Readonly<{ section: AdminSection }>): ReactNod
   }
 }
 
+// Self-contained app shell: FITGEAR admin has no top navbar (removed so the
+// fixed sidebar owns the full viewport height) — the logo lives at the top of
+// the sidebar instead, and account access (Clerk UserButton) lives at the
+// bottom, where the shared Navbar used to put it.
 export function AdminSidebar({ active, onChange }: Readonly<AdminSidebarProps>) {
+  const { user } = useUser()
+
   return (
-    <aside className="flex h-full flex-col overflow-y-auto border-r border-emerald-900/60 bg-emerald-950 p-4 lg:sticky lg:top-0">
-      <p className="mb-5 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
-        Panel admin
-      </p>
-      <nav className="space-y-1">
+    <aside className="flex h-full flex-col overflow-y-auto border-r border-white/10 bg-slate-950 lg:sticky lg:top-0">
+      <div className="border-b border-white/10 px-5 py-5">
+        <Link to="/admin" className="text-lg font-black uppercase tracking-widest">
+          <span className="text-white">FIT</span>
+          <span className="text-lime-400">GEAR</span>
+        </Link>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Panel admin
+        </p>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3 py-4">
         {sections.map((section) => (
           <button
             key={section}
@@ -116,8 +131,8 @@ export function AdminSidebar({ active, onChange }: Readonly<AdminSidebarProps>) 
             aria-current={active === section ? 'page' : undefined}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
               active === section
-                ? 'bg-emerald-500 text-emerald-950'
-                : 'text-emerald-100/70 hover:bg-white/5 hover:text-emerald-50'
+                ? 'bg-lime-400 text-slate-950'
+                : 'text-slate-300 hover:bg-white/5 hover:text-white'
             }`}
           >
             <span className="h-5 w-5 shrink-0 [&>svg]:h-full [&>svg]:w-full">
@@ -127,6 +142,32 @@ export function AdminSidebar({ active, onChange }: Readonly<AdminSidebarProps>) 
           </button>
         ))}
       </nav>
+
+      <div className="border-t border-white/10 px-3 py-4">
+        <Link
+          to="/shop"
+          className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
+        >
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Ver tienda
+        </Link>
+        <div className="flex items-center gap-2.5 px-3">
+          <UserButton
+            appearance={{ elements: { avatarBox: 'h-8 w-8 ring-2 ring-lime-400/40' } }}
+            userProfileUrl="/admin/account"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">
+              {user?.fullName ?? 'Mi cuenta'}
+            </p>
+            <p className="truncate text-xs text-slate-500">
+              {user?.primaryEmailAddress?.emailAddress ?? ''}
+            </p>
+          </div>
+        </div>
+      </div>
     </aside>
   )
 }
