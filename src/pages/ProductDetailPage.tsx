@@ -28,7 +28,7 @@ function getStockBadge(outOfStock: boolean, lowStock: boolean, stock: number): R
   if (lowStock) {
     return (
       <span className="mb-1 rounded-full bg-amber-400/90 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-900">
-        Ultimas {stock} unidades
+        Últimas {stock} unidades
       </span>
     )
   }
@@ -184,7 +184,7 @@ export function ProductDetailPage() {
   }
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-14 pb-24 lg:pb-0">
       {/* Breadcrumb */}
       <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
         <Link to="/shop" className="transition hover:text-lime-400">
@@ -323,6 +323,35 @@ export function ProductDetailPage() {
           </div>
         </section>
       ) : null}
+
+      {/* Sticky add-to-cart — mobile only; desktop already has the CTA in view
+          next to the gallery, so this would just be a redundant duplicate. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/95 px-4 pt-3 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-slate-400">{product.name}</p>
+            {product.hasDiscount ? (
+              <p className="flex items-baseline gap-2">
+                <span className="text-lg font-bold text-white">{formatCurrency(product.finalPrice)}</span>
+                <span className="text-xs text-slate-500 line-through">{formatCurrency(product.price)}</span>
+              </p>
+            ) : (
+              <p className="text-lg font-bold text-white">{formatCurrency(product.price)}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => addItem(product, quantity, selectedSize ?? undefined)}
+            disabled={!canAddToCart}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          >
+            {getAddToCartLabel(outOfStock, needsSizeChoice)}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
