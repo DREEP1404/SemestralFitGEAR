@@ -1,4 +1,14 @@
-type ShapeKind = 'hex' | 'ring' | 'triangle' | 'plus' | 'diamond' | 'arc'
+type ShapeKind =
+  | 'hex'
+  | 'ring'
+  | 'triangle'
+  | 'plus'
+  | 'diamond'
+  | 'arc'
+  // Ecommerce/gym-catalog motifs (used by the shop variant).
+  | 'dumbbell'
+  | 'kettlebell'
+  | 'band'
 type ShapeColor = 'lime' | 'cyan'
 
 interface ShapeSpec {
@@ -49,6 +59,27 @@ function ShapeMark({ kind, size, color, strokeOpacity, glowOpacity, strokeWidth 
       )}
       {kind === 'diamond' && <polygon points="50,4 96,50 50,96 4,50" {...common} />}
       {kind === 'arc' && <path d="M12 62a38 38 0 0 1 76 0" {...common} strokeLinecap="round" />}
+      {kind === 'dumbbell' && (
+        <g {...common} strokeLinecap="round">
+          <line x1="10" y1="38" x2="10" y2="62" />
+          <line x1="24" y1="26" x2="24" y2="74" />
+          <line x1="24" y1="50" x2="76" y2="50" />
+          <line x1="76" y1="26" x2="76" y2="74" />
+          <line x1="90" y1="38" x2="90" y2="62" />
+        </g>
+      )}
+      {kind === 'kettlebell' && (
+        <g {...common} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M38 40a12 12 0 0 1 24 0" />
+          <path d="M40 40c-12 6-18 20-10 34a20 20 0 0 0 40 0c8-14 2-28-10-34" />
+        </g>
+      )}
+      {kind === 'band' && (
+        <g {...common}>
+          <ellipse cx="50" cy="50" rx="42" ry="24" />
+          <ellipse cx="50" cy="50" rx="28" ry="13" strokeOpacity={0.6} />
+        </g>
+      )}
     </svg>
   )
 }
@@ -95,15 +126,16 @@ const VARIANTS: Record<string, ShapeSpec[]> = {
   // small size + small float travel: position + size + |floatX| stays inside the
   // gutter band, keeping them off the product cards at any width. See ShopPage.
   shop: [
-    // Left gutter — thicker stroke (viewBox units) so the small outlines still
-    // read once scaled down into the ~96px gutter.
-    { kind: 'ring', color: 'cyan', size: 46, top: '9%', left: '6px', rotate: 0, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 30, delay: 0, floatX: -12, floatY: 46, floatRot: 8 },
-    { kind: 'diamond', color: 'lime', size: 34, top: '40%', left: '16px', rotate: 6, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4.5, duration: 37, delay: 5, floatX: 12, floatY: -34, floatRot: -10 },
-    { kind: 'plus', color: 'lime', size: 30, bottom: '10%', left: '10px', rotate: 10, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 33, delay: 9, floatX: -10, floatY: -26, floatRot: 8 },
+    // Ecommerce/gym motifs (dumbbell, kettlebell, resistance band). Thicker
+    // stroke so the small outlines still read once scaled into the ~96px gutter.
+    // Left gutter
+    { kind: 'dumbbell', color: 'cyan', size: 48, top: '9%', left: '4px', rotate: -12, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 30, delay: 0, floatX: -12, floatY: 46, floatRot: 8 },
+    { kind: 'band', color: 'lime', size: 40, top: '40%', left: '12px', rotate: 8, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4, duration: 37, delay: 5, floatX: 12, floatY: -34, floatRot: -10 },
+    { kind: 'kettlebell', color: 'lime', size: 34, bottom: '10%', left: '10px', rotate: 6, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 33, delay: 9, floatX: -10, floatY: -26, floatRot: 8 },
     // Right gutter
-    { kind: 'hex', color: 'lime', size: 46, top: '14%', right: '8px', rotate: 8, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 42, delay: 3, floatX: 12, floatY: 58, floatRot: 12 },
-    { kind: 'triangle', color: 'cyan', size: 36, bottom: '18%', right: '14px', rotate: -8, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4.5, duration: 38, delay: 8, floatX: -14, floatY: -40, floatRot: -8 },
-    { kind: 'arc', color: 'lime', size: 40, top: '54%', right: '6px', rotate: 0, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 46, delay: 12, floatX: 10, floatY: 30, floatRot: 6 },
+    { kind: 'kettlebell', color: 'lime', size: 44, top: '14%', right: '6px', rotate: -6, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4.5, duration: 42, delay: 3, floatX: 12, floatY: 58, floatRot: 12 },
+    { kind: 'dumbbell', color: 'cyan', size: 44, bottom: '18%', right: '8px', rotate: 14, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4, duration: 38, delay: 8, floatX: -14, floatY: -40, floatRot: -8 },
+    { kind: 'band', color: 'lime', size: 40, top: '54%', right: '4px', rotate: -10, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4, duration: 46, delay: 12, floatX: 10, floatY: 30, floatRot: 6 },
   ],
 }
 
