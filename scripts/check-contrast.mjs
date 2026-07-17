@@ -85,8 +85,8 @@ const pairs = [
   // --- Panel admin: paleta clara ---
   // slate-400 sobre blanco/slate-50 (2.56:1) NO pasa ni como texto grande — se
   // reserva solo para placeholder:text-slate-400 (no evaluado aquí, mismo
-  // criterio que el resto del script no audita placeholders). Todo texto real
-  // usa slate-500 como mínimo.
+  // criterio que el resto del script no audita placeholders). Cualquier texto
+  // real usa slate-500 como mínimo.
   ['slate-900', 'white-bg'], // títulos/valores principales
   ['slate-700', 'white-bg'], // texto de formularios
   ['slate-600', 'white-bg'], // texto de tabla/cuerpo

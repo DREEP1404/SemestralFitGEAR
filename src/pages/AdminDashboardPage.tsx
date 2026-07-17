@@ -64,6 +64,99 @@ function KeepAlive({
   return <div hidden={!active}>{children}</div>
 }
 
+interface AdminOverviewPanelProps {
+  section: AdminSection
+  metrics: AdminMetrics | null
+  lowStockCount: number
+  users: BackendUser[]
+  onViewAllUsers: () => void
+}
+
+// Overview-only content (summary cards, low-stock banner, registered-users
+// table) — pulled out of AdminDashboardPage so its cognitive complexity stays
+// under the section === 'overview' checks that used to live inline there.
+function AdminOverviewPanel({
+  section,
+  metrics,
+  lowStockCount,
+  users,
+  onViewAllUsers,
+}: Readonly<AdminOverviewPanelProps>) {
+  if (section !== 'overview') {
+    return null
+  }
+
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <SummaryCard label="Productos" value={`${metrics?.activeProductsCount ?? 0}`} trend="Activos en el catálogo" />
+        <SummaryCard label="Órdenes" value={`${metrics?.ordersCount ?? 0}`} trend="En procesamiento" />
+        <SummaryCard label="Usuarios" value={`${metrics?.usersCount ?? 0}`} trend="Registrados" />
+        <SummaryCard label="Ingresos" value={formatCurrency(metrics?.totalRevenue ?? 0)} trend="Total de ventas" accent />
+        <SummaryCard label="Stock bajo" value={`${lowStockCount}`} trend="Productos por reabastecer" tone={lowStockCount > 0 ? 'warning' : 'default'} />
+      </div>
+
+      {lowStockCount > 0 ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <svg className="h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>
+            {lowStockCount === 1
+              ? '1 producto está en o por debajo de su umbral de stock. Revísalo en Inventario.'
+              : `${lowStockCount} productos están en o por debajo de su umbral de stock. Revísalos en Inventario.`}
+          </span>
+        </div>
+      ) : null}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold text-slate-900">
+            Usuarios registrados
+            <span className="ml-2 text-sm font-normal text-slate-500">
+              últimos {Math.min(USERS_OVERVIEW_LIMIT, users.length)}
+            </span>
+          </h3>
+
+          {users.length > USERS_OVERVIEW_LIMIT ? (
+            <button
+              type="button"
+              onClick={onViewAllUsers}
+              className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Ver todos ({users.length})
+            </button>
+          ) : null}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-140 text-left text-sm text-slate-600">
+            <thead className="text-slate-500">
+              <tr>
+                <th className="pb-2 font-medium">Nombre</th>
+                <th className="pb-2 font-medium">Email</th>
+                <th className="pb-2 font-medium">Rol</th>
+                <th className="pb-2 font-medium">Estado</th>
+                <th className="pb-2 font-medium">Fecha de registro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.slice(0, USERS_OVERVIEW_LIMIT).map((user) => (
+                <tr key={user.id} className="border-t border-slate-100">
+                  <td className="py-2.5 font-medium text-slate-900">{user.fullName}</td>
+                  <td>{user.email}</td>
+                  <td>{ROLE_LABELS[user.role]}</td>
+                  <td>{user.isActive ? 'Activo' : 'Inactivo'}</td>
+                  <td>{formatDate(user.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  )
+}
+
 export function AdminDashboardPage() {
   const [section, setSection] = useState<AdminSection>('overview')
   // Sections the user has opened at least once — drives KeepAlive so revisiting
@@ -272,33 +365,18 @@ export function AdminDashboardPage() {
             </p>
           </div>
 
-          {section === 'overview' ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <SummaryCard label="Productos" value={`${metrics?.activeProductsCount ?? 0}`} trend="Activos en el catálogo" />
-              <SummaryCard label="Órdenes" value={`${metrics?.ordersCount ?? 0}`} trend="En procesamiento" />
-              <SummaryCard label="Usuarios" value={`${metrics?.usersCount ?? 0}`} trend="Registrados" />
-              <SummaryCard label="Ingresos" value={formatCurrency(metrics?.totalRevenue ?? 0)} trend="Total de ventas" accent />
-              <SummaryCard label="Stock bajo" value={`${lowStockCount}`} trend="Productos por reabastecer" tone={lowStockCount > 0 ? 'warning' : 'default'} />
-            </div>
-          ) : null}
-
-          {section === 'overview' && lowStockCount > 0 ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <svg className="h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span>
-                {lowStockCount === 1
-                  ? '1 producto está en o por debajo de su umbral de stock. Revísalo en Inventario.'
-                  : `${lowStockCount} productos están en o por debajo de su umbral de stock. Revísalos en Inventario.`}
-              </span>
-            </div>
-          ) : null}
+          <AdminOverviewPanel
+            section={section}
+            metrics={metrics}
+            lowStockCount={lowStockCount}
+            users={users}
+            onViewAllUsers={() => setSection('users')}
+          />
 
           {loading ? (
             <div className="flex items-center gap-2.5 text-sm text-slate-500">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" aria-hidden />
-              Cargando tu panel...
+              <span>Cargando tu panel...</span>
             </div>
           ) : null}
 
@@ -331,53 +409,6 @@ export function AdminDashboardPage() {
               onViewAll={() => setSection('orders')}
             />
           )}
-
-          {section === 'overview' ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Usuarios registrados
-                  <span className="ml-2 text-sm font-normal text-slate-500">
-                    últimos {Math.min(USERS_OVERVIEW_LIMIT, users.length)}
-                  </span>
-                </h3>
-
-                {users.length > USERS_OVERVIEW_LIMIT ? (
-                  <button
-                    type="button"
-                    onClick={() => setSection('users')}
-                    className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Ver todos ({users.length})
-                  </button>
-                ) : null}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-140 text-left text-sm text-slate-600">
-                  <thead className="text-slate-500">
-                    <tr>
-                      <th className="pb-2 font-medium">Nombre</th>
-                      <th className="pb-2 font-medium">Email</th>
-                      <th className="pb-2 font-medium">Rol</th>
-                      <th className="pb-2 font-medium">Estado</th>
-                      <th className="pb-2 font-medium">Fecha de registro</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.slice(0, USERS_OVERVIEW_LIMIT).map((user) => (
-                      <tr key={user.id} className="border-t border-slate-100">
-                        <td className="py-2.5 font-medium text-slate-900">{user.fullName}</td>
-                        <td>{user.email}</td>
-                        <td>{ROLE_LABELS[user.role]}</td>
-                        <td>{user.isActive ? 'Activo' : 'Inactivo'}</td>
-                        <td>{formatDate(user.createdAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ) : null}
 
           <KeepAlive active={section === 'users'} visited={visited.has('users')}>
             <AdminUsersSection

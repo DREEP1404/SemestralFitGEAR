@@ -27,6 +27,232 @@ const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   REFUNDED: [],
 }
 
+interface StatusChangeSectionProps {
+  order: BackendOrder
+  nextStatuses: OrderStatus[]
+  targetStatus: OrderStatus | ''
+  onTargetStatusChange: (status: OrderStatus | '') => void
+  statusTracking: string
+  onStatusTrackingChange: (value: string) => void
+  statusCancelReason: string
+  onStatusCancelReasonChange: (value: string) => void
+  updatingStatus: boolean
+  onSubmit: () => void
+}
+
+// "Cambiar estado" panel, pulled out of AdminOrderDetailModal so its own
+// nested transition-specific fields (tracking number, cancel reason) don't
+// add to the parent's cognitive complexity.
+function StatusChangeSection({
+  order,
+  nextStatuses,
+  targetStatus,
+  onTargetStatusChange,
+  statusTracking,
+  onStatusTrackingChange,
+  statusCancelReason,
+  onStatusCancelReasonChange,
+  updatingStatus,
+  onSubmit,
+}: Readonly<StatusChangeSectionProps>) {
+  return (
+    <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <h4 className="text-sm font-semibold text-slate-900">Cambiar estado</h4>
+      {nextStatuses.length > 0 ? (
+        <div className="mt-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={targetStatus}
+              onChange={(event) => onTargetStatusChange(event.target.value as OrderStatus | '')}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500/60 focus:outline-none"
+            >
+              <option value="">Selecciona un estado…</option>
+              {nextStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {ORDER_STATUS_META[status].label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={!targetStatus || updatingStatus}
+              className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {updatingStatus ? 'Actualizando…' : 'Actualizar estado'}
+            </button>
+          </div>
+          {targetStatus === 'SHIPPED' ? (
+            <>
+              <input
+                type="text"
+                value={statusTracking}
+                onChange={(event) => onStatusTrackingChange(event.target.value)}
+                placeholder="Nº de rastreo (opcional)"
+                maxLength={64}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500/60 focus:outline-none"
+              />
+              <p className="text-xs text-slate-500">Se enviará un email de notificación al cliente.</p>
+            </>
+          ) : null}
+          {targetStatus === 'CANCELLED' && order.status === 'PAID' ? (
+            <>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Esta orden ya está pagada — cancelarla reembolsa el total al cliente por Stripe y repone
+                el stock automáticamente. La orden quedará como "Devuelto", no "Cancelado".
+              </p>
+              <textarea
+                value={statusCancelReason}
+                onChange={(event) => onStatusCancelReasonChange(event.target.value)}
+                placeholder="Motivo de la cancelación (opcional)"
+                rows={2}
+                maxLength={500}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500/60 focus:outline-none"
+              />
+            </>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">Esta orden no admite más cambios de estado.</p>
+      )}
+    </div>
+  )
+}
+
+interface RefundSectionProps {
+  order: BackendOrder
+  isRefundable: boolean
+  confirming: boolean
+  onStartConfirm: () => void
+  reason: string
+  onReasonChange: (value: string) => void
+  reasonRequired: boolean
+  refunding: boolean
+  canConfirmRefund: boolean
+  onCancelConfirm: () => void
+  onConfirmRefund: () => void
+}
+
+// "Reembolso" panel — same reasoning as StatusChangeSection above: its own
+// confirm/cancel sub-flow was a big share of the parent's branching.
+function RefundSection({
+  order,
+  isRefundable,
+  confirming,
+  onStartConfirm,
+  reason,
+  onReasonChange,
+  reasonRequired,
+  refunding,
+  canConfirmRefund,
+  onCancelConfirm,
+  onConfirmRefund,
+}: Readonly<RefundSectionProps>) {
+  return (
+    <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <h4 className="text-sm font-semibold text-slate-900">Reembolso</h4>
+      {isRefundable ? (
+        !confirming ? (
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">Reembolsa el total de esta orden a través de Stripe.</p>
+            <button
+              type="button"
+              onClick={onStartConfirm}
+              className="shrink-0 rounded-full bg-fuchsia-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-fuchsia-500"
+            >
+              Reembolsar
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-slate-600">
+              Vas a reembolsar <span className="font-semibold text-slate-900">{formatCurrency(order.totalAmount)}</span> al
+              cliente. Esta acción no se puede deshacer.
+            </p>
+            <div>
+              <textarea
+                value={reason}
+                onChange={(event) => onReasonChange(event.target.value)}
+                placeholder={
+                  reasonRequired
+                    ? 'Motivo del reembolso (obligatorio para órdenes enviadas)'
+                    : 'Motivo del reembolso (opcional)'
+                }
+                rows={2}
+                maxLength={500}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-fuchsia-500/60 focus:outline-none"
+              />
+              {reasonRequired ? (
+                <p className="mt-1.5 text-xs text-amber-600">
+                  Esta orden ya fue enviada — es una devolución real, así que el motivo es obligatorio.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={onCancelConfirm}
+                disabled={refunding}
+                className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmRefund}
+                disabled={!canConfirmRefund}
+                className="rounded-full bg-fuchsia-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {refunding ? 'Procesando...' : 'Confirmar reembolso'}
+              </button>
+            </div>
+          </div>
+        )
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">
+          {order.status === 'REFUNDED'
+            ? 'Esta orden ya fue reembolsada.'
+            : 'Solo se pueden reembolsar órdenes pagadas, enviadas o entregadas.'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+interface OrderHistoryListProps {
+  loadingHistory: boolean
+  history: OrderEvent[]
+}
+
+// "Historial" panel — isolates its own loading/empty/list branching.
+function OrderHistoryList({ loadingHistory, history }: Readonly<OrderHistoryListProps>) {
+  return (
+    <div className="mt-5">
+      <h4 className="mb-2 text-sm font-semibold text-slate-900">Historial</h4>
+      {loadingHistory ? (
+        <p className="text-sm text-slate-500">Cargando historial...</p>
+      ) : history.length === 0 ? (
+        <p className="text-sm text-slate-500">Sin eventos registrados.</p>
+      ) : (
+        <ul className="space-y-2">
+          {history.map((event) => (
+            <li key={event.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-slate-900">{event.type}</span>
+                <span className="text-xs text-slate-500">{formatDate(event.createdAt)}</span>
+              </div>
+              {event.reason ? <p className="mt-1 text-slate-500">Motivo: {event.reason}</p> : null}
+              {event.actorClerkId ? (
+                <p className="mt-0.5 text-xs text-slate-500">Por: {event.actorClerkId}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export function AdminOrderDetailModal({ order, onClose, onUpdated }: Readonly<AdminOrderDetailModalProps>) {
   const [history, setHistory] = useState<OrderEvent[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -194,143 +420,39 @@ export function AdminOrderDetailModal({ order, onClose, onUpdated }: Readonly<Ad
         </div>
 
         {/* Status change (HU-42) */}
-        <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <h4 className="text-sm font-semibold text-slate-900">Cambiar estado</h4>
-          {nextStatuses.length > 0 ? (
-            <div className="mt-3 space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <select
-                  value={targetStatus}
-                  onChange={(event) => setTargetStatus(event.target.value as OrderStatus | '')}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-emerald-500/60 focus:outline-none"
-                >
-                  <option value="">Selecciona un estado…</option>
-                  {nextStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {ORDER_STATUS_META[status].label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleStatusChange}
-                  disabled={!targetStatus || updatingStatus}
-                  className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {updatingStatus ? 'Actualizando…' : 'Actualizar estado'}
-                </button>
-              </div>
-              {targetStatus === 'SHIPPED' ? (
-                <>
-                  <input
-                    type="text"
-                    value={statusTracking}
-                    onChange={(event) => setStatusTracking(event.target.value)}
-                    placeholder="Nº de rastreo (opcional)"
-                    maxLength={64}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500/60 focus:outline-none"
-                  />
-                  <p className="text-xs text-slate-500">Se enviará un email de notificación al cliente.</p>
-                </>
-              ) : null}
-              {targetStatus === 'CANCELLED' && order.status === 'PAID' ? (
-                <>
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    Esta orden ya está pagada — cancelarla reembolsa el total al cliente por Stripe y
-                    repone el stock automáticamente. La orden quedará como "Devuelto", no "Cancelado".
-                  </p>
-                  <textarea
-                    value={statusCancelReason}
-                    onChange={(event) => setStatusCancelReason(event.target.value)}
-                    placeholder="Motivo de la cancelación (opcional)"
-                    rows={2}
-                    maxLength={500}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-500/60 focus:outline-none"
-                  />
-                </>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-slate-500">Esta orden no admite más cambios de estado.</p>
-          )}
-        </div>
+        <StatusChangeSection
+          order={order}
+          nextStatuses={nextStatuses}
+          targetStatus={targetStatus}
+          onTargetStatusChange={setTargetStatus}
+          statusTracking={statusTracking}
+          onStatusTrackingChange={setStatusTracking}
+          statusCancelReason={statusCancelReason}
+          onStatusCancelReasonChange={setStatusCancelReason}
+          updatingStatus={updatingStatus}
+          onSubmit={handleStatusChange}
+        />
 
         {/* Refund action */}
-        <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-          <h4 className="text-sm font-semibold text-slate-900">Reembolso</h4>
-          {isRefundable ? (
-            !confirming ? (
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <p className="text-sm text-slate-500">
-                  Reembolsa el total de esta orden a través de Stripe.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirming(true)
-                    setError(null)
-                  }}
-                  className="shrink-0 rounded-full bg-fuchsia-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-fuchsia-500"
-                >
-                  Reembolsar
-                </button>
-              </div>
-            ) : (
-              <div className="mt-3 space-y-3">
-                <p className="text-sm text-slate-600">
-                  Vas a reembolsar <span className="font-semibold text-slate-900">{formatCurrency(order.totalAmount)}</span> al
-                  cliente. Esta acción no se puede deshacer.
-                </p>
-                <div>
-                  <textarea
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                    placeholder={
-                      reasonRequired
-                        ? 'Motivo del reembolso (obligatorio para órdenes enviadas)'
-                        : 'Motivo del reembolso (opcional)'
-                    }
-                    rows={2}
-                    maxLength={500}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-fuchsia-500/60 focus:outline-none"
-                  />
-                  {reasonRequired ? (
-                    <p className="mt-1.5 text-xs text-amber-600">
-                      Esta orden ya fue enviada — es una devolución real, así que el motivo es obligatorio.
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirming(false)
-                      setReason('')
-                    }}
-                    disabled={refunding}
-                    className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRefund}
-                    disabled={!canConfirmRefund}
-                    className="rounded-full bg-fuchsia-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {refunding ? 'Procesando...' : 'Confirmar reembolso'}
-                  </button>
-                </div>
-              </div>
-            )
-          ) : (
-            <p className="mt-2 text-sm text-slate-500">
-              {order.status === 'REFUNDED'
-                ? 'Esta orden ya fue reembolsada.'
-                : 'Solo se pueden reembolsar órdenes pagadas, enviadas o entregadas.'}
-            </p>
-          )}
-        </div>
+        <RefundSection
+          order={order}
+          isRefundable={isRefundable}
+          confirming={confirming}
+          onStartConfirm={() => {
+            setConfirming(true)
+            setError(null)
+          }}
+          reason={reason}
+          onReasonChange={setReason}
+          reasonRequired={reasonRequired}
+          refunding={refunding}
+          canConfirmRefund={canConfirmRefund}
+          onCancelConfirm={() => {
+            setConfirming(false)
+            setReason('')
+          }}
+          onConfirmRefund={handleRefund}
+        />
 
         {/* Shared error for status-change and refund actions */}
         {error ? (
@@ -340,34 +462,7 @@ export function AdminOrderDetailModal({ order, onClose, onUpdated }: Readonly<Ad
         ) : null}
 
         {/* Order history */}
-        <div className="mt-5">
-          <h4 className="mb-2 text-sm font-semibold text-slate-900">Historial</h4>
-          {loadingHistory ? (
-            <p className="text-sm text-slate-500">Cargando historial...</p>
-          ) : history.length === 0 ? (
-            <p className="text-sm text-slate-500">Sin eventos registrados.</p>
-          ) : (
-            <ul className="space-y-2">
-              {history.map((event) => (
-                <li
-                  key={event.id}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-slate-900">{event.type}</span>
-                    <span className="text-xs text-slate-500">{formatDate(event.createdAt)}</span>
-                  </div>
-                  {event.reason ? (
-                    <p className="mt-1 text-slate-500">Motivo: {event.reason}</p>
-                  ) : null}
-                  {event.actorClerkId ? (
-                    <p className="mt-0.5 text-xs text-slate-500">Por: {event.actorClerkId}</p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <OrderHistoryList loadingHistory={loadingHistory} history={history} />
       </div>
     </div>
   )
