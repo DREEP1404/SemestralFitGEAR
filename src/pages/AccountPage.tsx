@@ -1,4 +1,5 @@
 import { UserProfile } from '@clerk/tanstack-react-start'
+import { clerkDarkAppearance } from '../lib/clerkAppearance'
 
 export function AccountPage() {
   return (
@@ -11,29 +12,10 @@ export function AccountPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Área principal con Clerk */}
-        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 lg:col-span-2">
-          <h3 className="mb-4 text-lg font-semibold text-white">Editar perfil</h3>
-          <div className="[&_*]:!text-slate-100">
-            <UserProfile
-              routing="path"
-              path="/account"
-              appearance={{
-                variables: {
-                  colorPrimary: '#a3e635',
-                  colorBackground: '#0f172a',
-                  colorForeground: '#e2e8f0',
-                  colorInput: '#0b1220',
-                  borderRadius: '0.9rem',
-                },
-                elements: {
-                  rootBox: 'w-full',
-                  card: 'bg-slate-800/50 border border-white/10',
-                },
-              }}
-            />
-          </div>
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+        <h3 className="mb-4 text-lg font-semibold text-white">Editar perfil</h3>
+        <div className="[&_*]:!text-slate-100">
+          <UserProfile routing="path" path="/account" appearance={clerkDarkAppearance} />
         </div>
       </div>
     </section>

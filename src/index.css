@@ -342,3 +342,14 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* CursorSpotlight (src/components/CursorSpotlight.tsx): hidden via CSS, not a
+   React state toggle, so there's no client-only render branch to desync from
+   SSR. No cursor to follow on touch/coarse pointers, and no cursor-chasing
+   motion under prefers-reduced-motion — both leave just the static
+   SectionDecor dot layers beneath it. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-spotlight {
+    display: none;
+  }
+}
