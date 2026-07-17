@@ -8,6 +8,9 @@ interface SectionDecorProps {
   watermark?: string
   /** Scrolls the texture slowly to the right (grid pattern only). */
   animated?: boolean
+  /** Opacity of the dot texture (dots pattern only). Default 0.5 — the landing
+   *  value; pages that sit closer to content (e.g. Shop) can dim it. */
+  dotOpacity?: number
 }
 
 // Decorative background layer for landing sections so they never read as a flat
@@ -20,6 +23,7 @@ export function SectionDecor({
   glowB = 'bg-cyan-500/10',
   watermark,
   animated = false,
+  dotOpacity = 0.5,
 }: SectionDecorProps) {
   const patternStyle =
     pattern === 'grid'
@@ -41,8 +45,7 @@ export function SectionDecor({
               'repeating-linear-gradient(45deg, rgba(163,230,53,0.22) 0px, rgba(163,230,53,0.22) 18px, transparent 18px, transparent 26px, rgba(34,211,238,0.18) 26px, rgba(34,211,238,0.18) 44px, transparent 44px, transparent 52px)',
           }
         : {
-            backgroundImage:
-              'radial-gradient(circle, rgba(163,230,53,0.5) 2px, transparent 2px)',
+            backgroundImage: `radial-gradient(circle, rgba(163,230,53,${dotOpacity}) 2px, transparent 2px)`,
             backgroundSize: '26px 26px',
           }
 

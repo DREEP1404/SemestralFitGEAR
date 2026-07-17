@@ -17,6 +17,9 @@ interface ShapeSpec {
   floatX: number
   floatY: number
   floatRot: number
+  /** SVG stroke width in the 100-unit viewBox (default 2). Small shapes (e.g.
+   *  the shop gutter) bump this so the thin outline still reads once scaled down. */
+  strokeWidth?: number
 }
 
 const STROKE: Record<ShapeColor, string> = {
@@ -27,8 +30,8 @@ const STROKE: Record<ShapeColor, string> = {
 // Outline vocabulary borrowed from the gym floor — a hex plate, a loaded ring,
 // a chevron, a rig joint, a plate clip, an open collar — rather than generic
 // decorative blobs.
-function ShapeMark({ kind, size, color, strokeOpacity, glowOpacity }: { kind: ShapeKind; size: number; color: ShapeColor; strokeOpacity: number; glowOpacity: number }) {
-  const common = { stroke: STROKE[color], strokeWidth: 2, fill: 'none' }
+function ShapeMark({ kind, size, color, strokeOpacity, glowOpacity, strokeWidth = 2 }: { kind: ShapeKind; size: number; color: ShapeColor; strokeOpacity: number; glowOpacity: number; strokeWidth?: number }) {
+  const common = { stroke: STROKE[color], strokeWidth, fill: 'none' }
   const glow = `drop-shadow(0 0 ${Math.round(size * 0.22)}px ${STROKE[color]}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')})`
 
   return (
@@ -86,6 +89,22 @@ const VARIANTS: Record<string, ShapeSpec[]> = {
     { kind: 'plus', color: 'lime', size: 30, bottom: '4%', right: '8%', rotate: 10, strokeOpacity: 0.5, glowOpacity: 0.65, duration: 31, delay: 6, floatX: -80, floatY: -18, floatRot: -10 },
     { kind: 'arc', color: 'lime', size: 40, top: '20%', right: '38%', rotate: 180, strokeOpacity: 0.42, glowOpacity: 0.58, duration: 25, delay: 3, floatX: 50, floatY: -24, floatRot: 6 },
   ],
+  // Shop catalog — unlike the landing variants, these do NOT span the section.
+  // The host wraps this layer in a ~96px gutter on each side of the max-w-7xl
+  // grid (2xl+ only), so every shape is pinned to the far left/right edge with a
+  // small size + small float travel: position + size + |floatX| stays inside the
+  // gutter band, keeping them off the product cards at any width. See ShopPage.
+  shop: [
+    // Left gutter — thicker stroke (viewBox units) so the small outlines still
+    // read once scaled down into the ~96px gutter.
+    { kind: 'ring', color: 'cyan', size: 46, top: '9%', left: '6px', rotate: 0, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 30, delay: 0, floatX: -12, floatY: 46, floatRot: 8 },
+    { kind: 'diamond', color: 'lime', size: 34, top: '40%', left: '16px', rotate: 6, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4.5, duration: 37, delay: 5, floatX: 12, floatY: -34, floatRot: -10 },
+    { kind: 'plus', color: 'lime', size: 30, bottom: '10%', left: '10px', rotate: 10, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 33, delay: 9, floatX: -10, floatY: -26, floatRot: 8 },
+    // Right gutter
+    { kind: 'hex', color: 'lime', size: 46, top: '14%', right: '8px', rotate: 8, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 42, delay: 3, floatX: 12, floatY: 58, floatRot: 12 },
+    { kind: 'triangle', color: 'cyan', size: 36, bottom: '18%', right: '14px', rotate: -8, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4.5, duration: 38, delay: 8, floatX: -14, floatY: -40, floatRot: -8 },
+    { kind: 'arc', color: 'lime', size: 40, top: '54%', right: '6px', rotate: 0, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 46, delay: 12, floatX: 10, floatY: 30, floatRot: 6 },
+  ],
 }
 
 interface FloatingShapesProps {
@@ -121,7 +140,7 @@ export function FloatingShapes({ variant }: FloatingShapesProps) {
             ['--float-delay' as string]: `${shape.delay}s`,
           }}
         >
-          <ShapeMark kind={shape.kind} size={shape.size} color={shape.color} strokeOpacity={shape.strokeOpacity} glowOpacity={shape.glowOpacity} />
+          <ShapeMark kind={shape.kind} size={shape.size} color={shape.color} strokeOpacity={shape.strokeOpacity} glowOpacity={shape.glowOpacity} strokeWidth={shape.strokeWidth} />
         </div>
       ))}
     </div>
