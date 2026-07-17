@@ -109,14 +109,12 @@
   --motion-enter: var(--duration-base);     /* content entering view       */
   --motion-panel: var(--duration-slow);     /* drawers, modals             */
   --motion-ease: var(--ease-out-athletic);  /* default curve               */
-}
 
-/* ---------------------------------------------------------------------
-   LAYER 3 · COMPONENT TOKENS
-   Component-scoped decisions, expressed purely in terms of LAYER 2.
-   Change a component's look here, once, not across N class strings.
-   --------------------------------------------------------------------- */
-:root {
+  /* -------------------------------------------------------------------
+     LAYER 3 · COMPONENT TOKENS
+     Component-scoped decisions, expressed purely in terms of LAYER 2.
+     Change a component's look here, once, not across N class strings.
+     ------------------------------------------------------------------- */
   /* Button — consumed by src/components/ui/Button.tsx */
   --btn-radius: var(--radius-pill);
   --btn-min-height: var(--size-touch-min);   /* 44px floor, always */

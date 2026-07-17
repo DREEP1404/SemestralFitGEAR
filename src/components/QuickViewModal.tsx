@@ -36,6 +36,23 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const hasSizes = product.sizes.length > 0
   const [added, setAdded] = useState(false)
 
+  let stockStatusClassName = 'text-lime-400'
+  let stockStatusLabel = 'Disponible'
+  if (outOfStock) {
+    stockStatusClassName = 'text-slate-400'
+    stockStatusLabel = 'Sin stock por ahora'
+  } else if (lowStock) {
+    stockStatusClassName = 'text-amber-300'
+    stockStatusLabel = `¡Quedan pocas! Últimas ${product.stock}`
+  }
+
+  let addButtonLabel = 'Agregar al carrito'
+  if (outOfStock) {
+    addButtonLabel = 'Sin stock'
+  } else if (added) {
+    addButtonLabel = 'Agregado ✓'
+  }
+
   // Focus management: move focus into the dialog on open, trap Tab within it,
   // and close on Escape.
   useEffect(() => {
@@ -63,7 +80,8 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
         return
       }
       const first = focusable[0]
-      const last = focusable[focusable.length - 1]
+      // Non-null: the `focusable.length === 0` guard above already ruled out empty.
+      const last = focusable.at(-1)!
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
         last.focus()
@@ -176,13 +194,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
           ) : null}
 
           <p className="text-sm font-medium">
-            {outOfStock ? (
-              <span className="text-slate-400">Sin stock por ahora</span>
-            ) : lowStock ? (
-              <span className="text-amber-300">¡Quedan pocas! Últimas {product.stock}</span>
-            ) : (
-              <span className="text-lime-400">Disponible</span>
-            )}
+            <span className={stockStatusClassName}>{stockStatusLabel}</span>
           </p>
 
           <div className="flex flex-wrap gap-3 pt-1">
@@ -203,7 +215,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
                 disabled={outOfStock}
                 className="inline-flex min-h-[var(--size-touch-min)] flex-1 items-center justify-center gap-2 rounded-full bg-lime-400 px-5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
               >
-                {outOfStock ? 'Sin stock' : added ? 'Agregado ✓' : 'Agregar al carrito'}
+                {addButtonLabel}
               </button>
             )}
             <Link

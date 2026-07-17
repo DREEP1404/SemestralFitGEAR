@@ -30,37 +30,41 @@ export function SectionDecor({
   dotOpacity = 0.5,
   mask = true,
 }: SectionDecorProps) {
-  const patternStyle =
-    pattern === 'grid'
-      ? {
-          backgroundImage:
-            'linear-gradient(rgba(163,230,53,0.4) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(163,230,53,0.4) 1.5px, transparent 1.5px)',
-          backgroundSize: '54px 54px',
-        }
-      : pattern === 'stripes'
-        ? {
-            // Diagonal hazard-tape motif — thick bands (18px, up from the
-            // original 8px) so it reads clearly behind content/photos. No
-            // backgroundSize here on purpose: repeating-linear-gradient
-            // already tiles seamlessly along its own angle — forcing a
-            // fixed backgroundSize cuts it into a grid of squares that
-            // don't line up at the seams, which made the lines look
-            // broken/checkered before.
-            backgroundImage:
-              'repeating-linear-gradient(45deg, rgba(163,230,53,0.22) 0px, rgba(163,230,53,0.22) 18px, transparent 18px, transparent 26px, rgba(34,211,238,0.18) 26px, rgba(34,211,238,0.18) 44px, transparent 44px, transparent 52px)',
-          }
-        : {
-            backgroundImage: `radial-gradient(circle, rgba(163,230,53,${dotOpacity}) 2px, transparent 2px)`,
-            backgroundSize: '26px 26px',
-          }
+  let patternStyle: { backgroundImage: string; backgroundSize?: string } = {
+    backgroundImage: `radial-gradient(circle, rgba(163,230,53,${dotOpacity}) 2px, transparent 2px)`,
+    backgroundSize: '26px 26px',
+  }
+  if (pattern === 'grid') {
+    patternStyle = {
+      backgroundImage:
+        'linear-gradient(rgba(163,230,53,0.4) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(163,230,53,0.4) 1.5px, transparent 1.5px)',
+      backgroundSize: '54px 54px',
+    }
+  } else if (pattern === 'stripes') {
+    // Diagonal hazard-tape motif — thick bands (18px, up from the original
+    // 8px) so it reads clearly behind content/photos. No backgroundSize here
+    // on purpose: repeating-linear-gradient already tiles seamlessly along
+    // its own angle — forcing a fixed backgroundSize cuts it into a grid of
+    // squares that don't line up at the seams, which made the lines look
+    // broken/checkered before.
+    patternStyle = {
+      backgroundImage:
+        'repeating-linear-gradient(45deg, rgba(163,230,53,0.22) 0px, rgba(163,230,53,0.22) 18px, transparent 18px, transparent 26px, rgba(34,211,238,0.18) 26px, rgba(34,211,238,0.18) 44px, transparent 44px, transparent 52px)',
+    }
+  }
+
+  let scrollAnimationClassName = ''
+  if (animated && pattern === 'grid') {
+    scrollAnimationClassName = 'fg-grid-scroll'
+  } else if (animated && pattern === 'stripes') {
+    scrollAnimationClassName = 'fg-stripe-scroll-right'
+  }
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Texture, faded toward the edges with a radial mask */}
       <div
-        className={`absolute inset-0 ${mask ? '[mask-image:radial-gradient(ellipse_at_center,black,transparent_88%)]' : ''} ${
-          animated && pattern === 'grid' ? 'fg-grid-scroll' : animated && pattern === 'stripes' ? 'fg-stripe-scroll-right' : ''
-        }`}
+        className={`absolute inset-0 ${mask ? '[mask-image:radial-gradient(ellipse_at_center,black,transparent_88%)]' : ''} ${scrollAnimationClassName}`}
         style={patternStyle}
       />
 

@@ -40,7 +40,14 @@ const STROKE: Record<ShapeColor, string> = {
 // Outline vocabulary borrowed from the gym floor — a hex plate, a loaded ring,
 // a chevron, a rig joint, a plate clip, an open collar — rather than generic
 // decorative blobs.
-function ShapeMark({ kind, size, color, strokeOpacity, glowOpacity, strokeWidth = 2 }: { kind: ShapeKind; size: number; color: ShapeColor; strokeOpacity: number; glowOpacity: number; strokeWidth?: number }) {
+function ShapeMark({
+  kind,
+  size,
+  color,
+  strokeOpacity,
+  glowOpacity,
+  strokeWidth = 2,
+}: Readonly<{ kind: ShapeKind; size: number; color: ShapeColor; strokeOpacity: number; glowOpacity: number; strokeWidth?: number }>) {
   const common = { stroke: STROKE[color], strokeWidth, fill: 'none' }
   const glow = `drop-shadow(0 0 ${Math.round(size * 0.22)}px ${STROKE[color]}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')})`
 
@@ -133,14 +140,14 @@ interface FloatingShapesProps {
 // cosmetic: hidden from assistive tech, non-interactive, and the drift is
 // plain CSS (fg-float in index.css) so it's paused by the centralized
 // prefers-reduced-motion block like every other ambient animation in the app.
-export function FloatingShapes({ variant }: FloatingShapesProps) {
+export function FloatingShapes({ variant }: Readonly<FloatingShapesProps>) {
   const shapes = VARIANTS[variant]
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {shapes.map((shape, index) => (
+      {shapes.map((shape) => (
         <div
-          key={index}
+          key={`${shape.kind}-${shape.duration}-${shape.delay}`}
           className="fg-float absolute"
           style={{
             top: shape.top,

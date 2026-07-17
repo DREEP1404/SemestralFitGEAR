@@ -31,7 +31,7 @@ interface SelectProps<T extends string> {
  * fade+rise uses the shared motion tokens and is dropped under reduced motion
  * by the app-wide MotionConfig reducedMotion="user".
  */
-export function Select<T extends string>({ value, onChange, options, label, tone = 'outline' }: SelectProps<T>) {
+export function Select<T extends string>({ value, onChange, options, label, tone = 'outline' }: Readonly<SelectProps<T>>) {
   const [open, setOpen] = useState(false)
   const selectedIndex = Math.max(
     0,
@@ -132,6 +132,11 @@ export function Select<T extends string>({ value, onChange, options, label, tone
     }
   }
 
+  const openSolidShadowClass = open ? 'shadow-[0_0_20px_-6px_rgba(100,116,139,0.45)]' : ''
+  const openOutlineBorderClass = open
+    ? 'border-lime-400/60 ring-2 ring-lime-400/30'
+    : 'border-white/10 hover:border-white/25'
+
   return (
     <div ref={rootRef} className="relative shrink-0">
       <button
@@ -145,12 +150,8 @@ export function Select<T extends string>({ value, onChange, options, label, tone
         onKeyDown={handleTriggerKeyDown}
         className={
           tone === 'solid'
-            ? `inline-flex min-h-[var(--size-touch-min)] items-center gap-2 rounded-full bg-slate-700 py-2.5 pl-4 pr-3 text-sm font-bold text-slate-100 outline-none transition hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-slate-400/40 ${
-                open ? 'shadow-[0_0_20px_-6px_rgba(100,116,139,0.45)]' : ''
-              }`
-            : `inline-flex min-h-[var(--size-touch-min)] items-center gap-2 rounded-full border bg-slate-950/60 py-2.5 pl-4 pr-3 text-sm font-medium text-slate-200 outline-none transition focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/30 ${
-                open ? 'border-lime-400/60 ring-2 ring-lime-400/30' : 'border-white/10 hover:border-white/25'
-              }`
+            ? `inline-flex min-h-[var(--size-touch-min)] items-center gap-2 rounded-full bg-slate-700 py-2.5 pl-4 pr-3 text-sm font-bold text-slate-100 outline-none transition hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-slate-400/40 ${openSolidShadowClass}`
+            : `inline-flex min-h-[var(--size-touch-min)] items-center gap-2 rounded-full border bg-slate-950/60 py-2.5 pl-4 pr-3 text-sm font-medium text-slate-200 outline-none transition focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/30 ${openOutlineBorderClass}`
         }
       >
         <span className="whitespace-nowrap">{selected.label}</span>

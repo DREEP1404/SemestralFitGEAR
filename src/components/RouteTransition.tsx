@@ -36,7 +36,7 @@ function useHydrated() {
  * one. Reduced motion is handled centrally by `<MotionConfig reducedMotion="user">`
  * (see app/routes/_site.tsx); we also skip the entrance entirely here.
  */
-export function RouteTransition({ routeKey, children }: RouteTransitionProps) {
+export function RouteTransition({ routeKey, children }: Readonly<RouteTransitionProps>) {
   const hydrated = useHydrated()
   const reduceMotion = useReducedMotion()
   const animate = hydrated && !reduceMotion

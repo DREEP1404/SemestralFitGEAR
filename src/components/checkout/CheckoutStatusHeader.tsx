@@ -19,7 +19,7 @@ export function CheckoutStatusHeader({
   title,
   description,
   pillLabel,
-}: CheckoutStatusHeaderProps) {
+}: Readonly<CheckoutStatusHeaderProps>) {
   return (
     <>
       <p className={`mt-6 text-xs font-bold uppercase tracking-[0.24em] ${badgeClassName}`}>{badge}</p>

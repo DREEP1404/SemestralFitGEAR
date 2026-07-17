@@ -30,7 +30,7 @@ function sortForDisplay<T extends { label: string }>(categories: ReadonlyArray<T
 // Small line-icon per category — same 1.8px stroke weight as the rest of the
 // app's icon set. Falls back to no icon for categories outside this map.
 // Exported so the header accent (ShopPage.tsx) can reuse the same icons.
-export function CategoryIcon({ label, className = 'h-4 w-4 shrink-0' }: { label: string; className?: string }) {
+export function CategoryIcon({ label, className = 'h-4 w-4 shrink-0' }: Readonly<{ label: string; className?: string }>) {
   const common = { stroke: 'currentColor', strokeWidth: 1.8, fill: 'none' as const }
   const cls = className
 

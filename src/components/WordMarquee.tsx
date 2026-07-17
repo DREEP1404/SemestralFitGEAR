@@ -10,7 +10,7 @@ interface WordMarqueeProps {
 // message) — same format/color language, different word source. The track
 // holds the sequence twice so the CSS translateX(-50%) loop is seamless.
 // Hidden from assistive tech.
-export function WordMarquee({ words }: WordMarqueeProps) {
+export function WordMarquee({ words }: Readonly<WordMarqueeProps>) {
   if (words.length === 0) {
     return null
   }
