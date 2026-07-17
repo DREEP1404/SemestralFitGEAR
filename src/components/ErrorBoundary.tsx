@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { posthog } from '../lib/posthog'
+import { getButtonClassName } from './ui/Button'
 
 interface Props {
   children: ReactNode
@@ -86,11 +87,7 @@ export class ErrorBoundary extends Component<Props, State> {
             seguir donde estabas.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={this.handleReload}
-          className="inline-flex items-center gap-2 rounded-full bg-lime-400 px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-lime-300"
-        >
+        <button type="button" onClick={this.handleReload} className={getButtonClassName({ variant: 'primary' })}>
           Recargar página
         </button>
       </div>
