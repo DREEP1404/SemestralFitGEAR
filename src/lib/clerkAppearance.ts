@@ -18,8 +18,9 @@ export const clerkDarkAppearance: ClerkAppearance = {
     fontFamily: 'Inter, "Segoe UI", sans-serif',
   },
   elements: {
-    rootBox: 'w-full',
-    card: 'bg-slate-900 border border-white/[0.08] shadow-2xl shadow-black/40',
+    rootBox: '!w-full',
+    cardBox: '!w-full',
+    card: '!w-full bg-slate-900 border border-white/[0.08] shadow-2xl shadow-black/40',
     headerTitle: 'text-white',
     headerSubtitle: 'text-slate-400',
     socialButtonsBlockButton:
