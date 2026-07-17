@@ -120,23 +120,6 @@ const VARIANTS: Record<string, ShapeSpec[]> = {
     { kind: 'plus', color: 'lime', size: 30, bottom: '4%', right: '8%', rotate: 10, strokeOpacity: 0.5, glowOpacity: 0.65, duration: 31, delay: 6, floatX: -80, floatY: -18, floatRot: -10 },
     { kind: 'arc', color: 'lime', size: 40, top: '20%', right: '38%', rotate: 180, strokeOpacity: 0.42, glowOpacity: 0.58, duration: 25, delay: 3, floatX: 50, floatY: -24, floatRot: 6 },
   ],
-  // Shop catalog — unlike the landing variants, these do NOT span the section.
-  // The host wraps this layer in a ~96px gutter on each side of the max-w-7xl
-  // grid (2xl+ only), so every shape is pinned to the far left/right edge with a
-  // small size + small float travel: position + size + |floatX| stays inside the
-  // gutter band, keeping them off the product cards at any width. See ShopPage.
-  shop: [
-    // Ecommerce/gym motifs (dumbbell, kettlebell, resistance band). Thicker
-    // stroke so the small outlines still read once scaled into the ~96px gutter.
-    // Left gutter
-    { kind: 'dumbbell', color: 'cyan', size: 48, top: '9%', left: '4px', rotate: -12, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4, duration: 30, delay: 0, floatX: -12, floatY: 46, floatRot: 8 },
-    { kind: 'band', color: 'lime', size: 40, top: '40%', left: '12px', rotate: 8, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4, duration: 37, delay: 5, floatX: 12, floatY: -34, floatRot: -10 },
-    { kind: 'kettlebell', color: 'lime', size: 34, bottom: '10%', left: '10px', rotate: 6, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4.5, duration: 33, delay: 9, floatX: -10, floatY: -26, floatRot: 8 },
-    // Right gutter
-    { kind: 'kettlebell', color: 'lime', size: 44, top: '14%', right: '6px', rotate: -6, strokeOpacity: 0.8, glowOpacity: 0.8, strokeWidth: 4.5, duration: 42, delay: 3, floatX: 12, floatY: 58, floatRot: 12 },
-    { kind: 'dumbbell', color: 'cyan', size: 44, bottom: '18%', right: '8px', rotate: 14, strokeOpacity: 0.78, glowOpacity: 0.75, strokeWidth: 4, duration: 38, delay: 8, floatX: -14, floatY: -40, floatRot: -8 },
-    { kind: 'band', color: 'lime', size: 40, top: '54%', right: '4px', rotate: -10, strokeOpacity: 0.75, glowOpacity: 0.72, strokeWidth: 4, duration: 46, delay: 12, floatX: 10, floatY: 30, floatRot: 6 },
-  ],
 }
 
 interface FloatingShapesProps {

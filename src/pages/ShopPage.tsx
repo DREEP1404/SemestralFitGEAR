@@ -3,8 +3,7 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useStaggerIn } from '../hooks/useStaggerIn'
 import { ApiError } from '../api/apiClient'
 import { getCategories, getProducts } from '../api/fitgearApi'
-import { CategoryFilter, CategoryIcon } from '../components/CategoryFilter'
-import { FloatingShapes } from '../components/FloatingShapes'
+import { CategoryFilter } from '../components/CategoryFilter'
 import { ProductAutocomplete } from '../components/ProductAutocomplete'
 import { ProductCard } from '../components/ProductCard'
 import { SectionDecor } from '../components/SectionDecor'
@@ -44,10 +43,6 @@ const SORT_OPTIONS: ReadonlyArray<SelectOption<SortBy>> = [
   { value: 'priceAsc', label: 'Precio: menor a mayor' },
   { value: 'priceDesc', label: 'Precio: mayor a menor' },
 ]
-
-// Decorative header badges — reuse the same icon vocabulary as the category
-// chips (see CategoryFilter.tsx) so the header and toolbar read as one set.
-const HEADER_ACCENT_ICONS = ['Cuerdas', 'Bandas', 'Pesas', 'Botellas']
 
 export function ShopPage() {
   const search = useSearch({ strict: false }) as { category?: string; search?: string }
@@ -328,44 +323,24 @@ export function ShopPage() {
     // `isolate` scopes the -z-10 backdrop to this subtree; without a local
     // stacking context it would fall behind the app's slate-950 background.
     <div className="relative isolate space-y-8">
-      {/* Ambient catalog backdrop: a dimmed lime dot texture. Sits behind the
+      {/* Ambient catalog backdrop: a lime dot texture, uniform edge-to-edge
+          (no fade mask) like the landing sections use. Sits behind the
           content (-z-10); the panels/cards are opaque so the texture only
           reads through the gaps and margins. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <SectionDecor pattern="dots" dotOpacity={0.5} mask={false} glowA="bg-lime-400/8" glowB="bg-cyan-500/8" />
-      </div>
-      {/* Outlined geometric shapes, pinned to the side gutters that only exist
-          once the viewport is wider than the max-w-7xl content (2xl+). They bleed
-          into that margin and never sit behind the product columns. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 -left-24 -right-24 -z-10 hidden 2xl:block"
-      >
-        <FloatingShapes variant="shop" />
+        <SectionDecor pattern="dots" dotOpacity={0.7} mask={false} glowA="bg-lime-400/8" glowB="bg-cyan-500/8" />
       </div>
 
       {/* Header */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1
-              className="bg-lime-400 px-5 py-2 text-3xl font-black uppercase leading-none tracking-tight text-slate-950 sm:text-4xl"
-              style={{ clipPath: 'polygon(0 0, 100% 0, calc(100% - 1.1rem) 100%, 0 100%)' }}
-            >
+          {/* Rounded rhomboid badge: skew the box, counter-skew the text so
+              it stays upright — clip-path can't do rounded corners, so the
+              parallelogram comes from the skew instead. */}
+          <div className="inline-block -skew-x-12 rounded-xl bg-lime-400 px-2 py-2">
+            <h1 className="skew-x-12 px-3 text-3xl font-black uppercase leading-none tracking-tight text-slate-950 sm:text-4xl">
               Catálogo FITGEAR
             </h1>
-            {/* Icon accent — same icon set as the category chips below, so the
-                header and the toolbar read as one vocabulary. Purely decorative. */}
-            <div aria-hidden className="flex items-center gap-2">
-              {HEADER_ACCENT_ICONS.map((label) => (
-                <span
-                  key={label}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-lime-400 text-slate-950"
-                >
-                  <CategoryIcon label={label} className="h-5 w-5" />
-                </span>
-              ))}
-            </div>
           </div>
           <p className="mt-3 max-w-xl text-slate-400">
             Todo tu equipo de entrenamiento, en un solo lugar.
