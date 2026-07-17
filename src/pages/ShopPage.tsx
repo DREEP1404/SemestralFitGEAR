@@ -322,12 +322,23 @@ export function ShopPage() {
   return (
     // `isolate` scopes the -z-10 backdrop to this subtree; without a local
     // stacking context it would fall behind the app's slate-950 background.
-    <div className="relative isolate space-y-8">
+    // `overflow-x-hidden`: the full-bleed dot layer below is sized with
+    // 100vw, which on some browsers is a few px wider than the actual page
+    // (it doesn't subtract the scrollbar) — clip that here instead of
+    // letting it add horizontal scroll to the whole page.
+    <div className="relative isolate space-y-8 overflow-x-hidden">
       {/* Ambient catalog backdrop: a lime dot texture, uniform edge-to-edge
-          (no fade mask) like the landing sections use. Sits behind the
+          (no fade mask) like the landing sections use. This page's own root
+          is width-capped by the shared max-w-7xl site layout, so the texture
+          bleeds past it to the real viewport edges (left-[calc(50%-50vw)] +
+          w-screen) — otherwise it only covers the content column and reads
+          as a dot island with dark margins on wide screens. Sits behind the
           content (-z-10); the panels/cards are opaque so the texture only
           reads through the gaps and margins. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-[calc(50%-50vw)] -z-10 w-screen overflow-hidden"
+      >
         <SectionDecor pattern="dots" dotOpacity={0.7} mask={false} glowA="bg-lime-400/8" glowB="bg-cyan-500/8" />
       </div>
 
