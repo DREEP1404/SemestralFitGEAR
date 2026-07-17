@@ -4,8 +4,12 @@ import { useStaggerIn } from '../hooks/useStaggerIn'
 import { ApiError } from '../api/apiClient'
 import { getCategories, getProducts } from '../api/fitgearApi'
 import { CategoryFilter } from '../components/CategoryFilter'
+import { FloatingShapes } from '../components/FloatingShapes'
 import { ProductAutocomplete } from '../components/ProductAutocomplete'
 import { ProductCard } from '../components/ProductCard'
+import { SectionDecor } from '../components/SectionDecor'
+import { ShopSpotlight } from '../components/ShopSpotlight'
+import { Select, type SelectOption } from '../components/ui/Select'
 import { categories as fallbackCategoryNames } from '../data/categories'
 import { products as fallbackProducts } from '../data/products'
 import type { Product } from '../types'
@@ -26,6 +30,21 @@ const PAGE_SIZE = 30
 const SEARCH_DEBOUNCE_MS = 350
 
 type PriceRange = 'all' | 'under20' | '20to50' | '50to100' | 'over100'
+type SortBy = 'featured' | 'priceAsc' | 'priceDesc'
+
+const PRICE_OPTIONS: ReadonlyArray<SelectOption<PriceRange>> = [
+  { value: 'all', label: 'Todos los precios' },
+  { value: 'under20', label: 'Menos de $20' },
+  { value: '20to50', label: '$20 - $50' },
+  { value: '50to100', label: '$50 - $100' },
+  { value: 'over100', label: 'Más de $100' },
+]
+
+const SORT_OPTIONS: ReadonlyArray<SelectOption<SortBy>> = [
+  { value: 'featured', label: 'Más nuevos' },
+  { value: 'priceAsc', label: 'Precio: menor a mayor' },
+  { value: 'priceDesc', label: 'Precio: mayor a menor' },
+]
 
 export function ShopPage() {
   const search = useSearch({ strict: false }) as { category?: string; search?: string }
@@ -35,7 +54,7 @@ export function ShopPage() {
   )
   const [query, setQuery] = useState(search.search ?? '')
   const [debouncedQuery, setDebouncedQuery] = useState(query)
-  const [sortBy, setSortBy] = useState<'featured' | 'priceAsc' | 'priceDesc'>('featured')
+  const [sortBy, setSortBy] = useState<SortBy>('featured')
   const [priceRange, setPriceRange] = useState<PriceRange>('all')
   const [categories, setCategories] = useState<Array<{ value: string; label: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -303,12 +322,48 @@ export function ShopPage() {
   useStaggerIn(gridRef, { deps: [resolvedCategory, sortBy, loading, page] })
 
   return (
-    <div className="space-y-8">
+    // `isolate` scopes the -z-10 backdrop to this subtree; without a local
+    // stacking context it would fall behind the app's slate-950 background.
+    <div className="relative isolate space-y-8">
+      {/* Ambient catalog backdrop: a dimmed lime dot texture that brightens in a
+          soft radius under the cursor (static dots on touch / reduced motion).
+          Sits behind the content (-z-10); the panels/cards are opaque so the
+          texture only reads through the gaps and margins. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <SectionDecor pattern="dots" dotOpacity={0.35} glowA="bg-lime-400/8" glowB="bg-cyan-500/8" />
+        <ShopSpotlight />
+      </div>
+      {/* Outlined geometric shapes, pinned to the side gutters that only exist
+          once the viewport is wider than the max-w-7xl content (2xl+). They bleed
+          into that margin and never sit behind the product columns. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 -left-24 -right-24 -z-10 hidden 2xl:block"
+      >
+        <FloatingShapes variant="shop" />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">Tienda</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">Catálogo FITGEAR</h1>
+          <div className="mt-3 flex items-center gap-3">
+            <h1 className="text-4xl font-bold tracking-tight text-white">Catálogo FITGEAR</h1>
+            {/* Corner accent: 4 thin outlined diagonal bars (stroke only). */}
+            <svg
+              className="h-5 w-14 shrink-0 text-lime-400"
+              viewBox="0 0 56 20"
+              fill="none"
+              aria-hidden
+            >
+              <g stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+                <polygon points="2,19 8,19 16,1 10,1" />
+                <polygon points="15,19 21,19 29,1 23,1" />
+                <polygon points="28,19 34,19 42,1 36,1" />
+                <polygon points="41,19 47,19 55,1 49,1" />
+              </g>
+            </svg>
+          </div>
           <p className="mt-3 max-w-xl text-slate-400">
             Todo tu equipo de entrenamiento, en un solo lugar.
           </p>
@@ -336,40 +391,13 @@ export function ShopPage() {
             onSelect={setSelectedCategory}
           />
           <div className="flex shrink-0 flex-wrap gap-3">
-            <label className="relative shrink-0">
-              <span className="sr-only">Filtrar por precio</span>
-              <select
-                value={priceRange}
-                onChange={(event) => setPriceRange(event.target.value as PriceRange)}
-                className="cursor-pointer appearance-none rounded-full border border-white/10 bg-slate-950/60 py-2.5 pl-4 pr-10 text-sm font-medium text-slate-200 outline-none transition focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/30"
-              >
-                <option value="all">Todos los precios</option>
-                <option value="under20">Menos de $20</option>
-                <option value="20to50">$20 - $50</option>
-                <option value="50to100">$50 - $100</option>
-                <option value="over100">Más de $100</option>
-              </select>
-              <svg className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </label>
-            <label className="relative shrink-0">
-              <span className="sr-only">Ordenar productos</span>
-              <select
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as 'featured' | 'priceAsc' | 'priceDesc')
-                }
-                className="cursor-pointer appearance-none rounded-full border border-white/10 bg-slate-950/60 py-2.5 pl-4 pr-10 text-sm font-medium text-slate-200 outline-none transition focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/30"
-              >
-                <option value="featured">Más nuevos</option>
-                <option value="priceAsc">Precio: menor a mayor</option>
-                <option value="priceDesc">Precio: mayor a menor</option>
-              </select>
-              <svg className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </label>
+            <Select
+              label="Filtrar por precio"
+              value={priceRange}
+              onChange={setPriceRange}
+              options={PRICE_OPTIONS}
+            />
+            <Select label="Ordenar productos" value={sortBy} onChange={setSortBy} options={SORT_OPTIONS} />
           </div>
         </div>
       </div>
@@ -382,7 +410,7 @@ export function ShopPage() {
           {pageCount > 1 ? (
             <span>
               {' '}
-              &middot; pagina <span className="font-bold text-white">{page}</span> de{' '}
+              &middot; página <span className="font-bold text-white">{page}</span> de{' '}
               <span className="font-bold text-white">{pageCount}</span>
             </span>
           ) : null}
