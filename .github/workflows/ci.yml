@@ -80,6 +80,10 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install
+      # mcp-server reutiliza services/models/middlewares de backend/src/ sin
+      # duplicar logica (imports cross-package) -- necesita backend/node_modules
+      # instalado tambien, no solo el suyo propio.
+      - run: (cd ../backend && bun install)
       # Same reasoning as the backend job above -- isolate each file's mocks.
       - name: bun test (un proceso por archivo)
         run: |
