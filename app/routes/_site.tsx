@@ -120,7 +120,12 @@ function SiteChrome() {
         // to normal document flow (stacked sidebar + content, whole page
         // scrolls) — the fixed-shell pattern is desktop-oriented by nature,
         // same as the reference dashboard this was modeled on.
-        <SiteMainContent isAdminPage={isAdminPage} isShopPage={isShopPage} pathname={location.pathname} />
+        <SiteMainContent
+          isAdminPage={isAdminPage}
+          isShopPage={isShopPage}
+          isCheckoutPage={isCheckoutPage}
+          pathname={location.pathname}
+        />
       )}
 
       {isPostLogin || isAdminPage || isCheckoutPage ? null : <Footer />}

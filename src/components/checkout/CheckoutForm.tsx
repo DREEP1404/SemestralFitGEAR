@@ -137,11 +137,11 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-      <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-6">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+      <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-8">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
               <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
               <path
                 d="M22 5.5 12 13 2 5.5"
@@ -152,20 +152,20 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
               />
             </svg>
           </span>
-          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-lime-400">Contacto</h2>
+          <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-lime-400">Contacto</h2>
         </div>
-        <p className="mt-3 text-sm text-slate-300">{backendUser?.email}</p>
+        <p className="mt-4 text-base text-slate-300">{backendUser?.email}</p>
       </div>
 
-      <div className="flex items-center gap-3 px-1">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-2.5">
           <span
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300 ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors duration-300 ${
               step === 'address' ? 'bg-lime-400 text-slate-900' : 'bg-lime-400/15 text-lime-300'
             }`}
           >
             {step === 'payment' ? (
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path
                   d="M5 13l4 4L19 7"
                   stroke="currentColor"
@@ -179,7 +179,7 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
             )}
           </span>
           <span
-            className={`text-xs font-bold uppercase tracking-wide transition-colors duration-300 ${step === 'address' ? 'text-white' : 'text-lime-300'}`}
+            className={`text-sm font-bold uppercase tracking-wide transition-colors duration-300 ${step === 'address' ? 'text-white' : 'text-lime-300'}`}
           >
             Dirección
           </span>
@@ -191,16 +191,16 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <span
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300 ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors duration-300 ${
               step === 'payment' ? 'bg-lime-400 text-slate-900' : 'bg-white/10 text-slate-500'
             }`}
           >
             2
           </span>
           <span
-            className={`text-xs font-bold uppercase tracking-wide transition-colors duration-300 ${step === 'payment' ? 'text-white' : 'text-slate-500'}`}
+            className={`text-sm font-bold uppercase tracking-wide transition-colors duration-300 ${step === 'payment' ? 'text-white' : 'text-slate-500'}`}
           >
             Pago
           </span>
@@ -209,12 +209,12 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
 
       <div
         data-step-panel="address"
-        className={`space-y-5 ${step === 'payment' ? 'hidden' : ''}`}
+        className={`space-y-6 ${step === 'payment' ? 'hidden' : ''}`}
       >
-        <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-6">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path
                   d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0z"
                   stroke="currentColor"
@@ -224,11 +224,11 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
                 <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" />
               </svg>
             </span>
-            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-lime-400">
+            <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-lime-400">
               Dirección de envío
             </h2>
           </div>
-          <div className="mt-4">
+          <div className="mt-5">
             <AddressElement
               options={{ mode: 'shipping', allowedCountries: ['PA'] }}
               onChange={(changeEvent) =>
@@ -242,10 +242,10 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
           type="button"
           disabled={!shippingValue}
           onClick={() => setStep('payment')}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-4 text-base font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
           Siguiente
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
               d="M5 12h14M13 6l6 6-6 6"
               stroke="currentColor"
@@ -258,26 +258,26 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
       </div>
 
       {step === 'payment' ? (
-        <div data-step-panel="payment" className="space-y-5">
+        <div data-step-panel="payment" className="space-y-6">
           <button
             type="button"
             onClick={() => setStep('address')}
-            className="text-sm font-semibold text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+            className="text-base font-semibold text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
           >
             ← Editar dirección
           </button>
 
-          <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-6">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <div className="rounded-3xl border border-white/[0.08] bg-slate-900 p-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
                   <path d="M1 10h22" stroke="currentColor" strokeWidth="2" />
                 </svg>
               </span>
-              <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-lime-400">Pago</h2>
+              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-lime-400">Pago</h2>
             </div>
-            <div className="mt-4">
+            <div className="mt-5">
               <PaymentElement
                 options={{
                   // Link rides along with the 'card' payment method type
@@ -296,7 +296,7 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
           </div>
 
           {error ? (
-            <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+            <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-base text-rose-300">
               {error}
             </p>
           ) : null}
@@ -304,19 +304,19 @@ export function CheckoutForm({ orderId, paymentIntentId }: CheckoutFormProps) {
           <button
             type="submit"
             disabled={!stripe || !elements || submitting}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-4 text-base font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
           >
             {submitting ? (
               <>
                 <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/40 border-t-slate-900"
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900/40 border-t-slate-900"
                   aria-hidden
                 />
                 Procesando pago...
               </>
             ) : (
               <>
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
                   <path
                     d="M7 11V7a5 5 0 0 1 10 0v4"

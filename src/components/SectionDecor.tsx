@@ -58,6 +58,8 @@ export function SectionDecor({
     scrollAnimationClassName = 'fg-grid-scroll'
   } else if (animated && pattern === 'stripes') {
     scrollAnimationClassName = 'fg-stripe-scroll-right'
+  } else if (animated && pattern === 'dots') {
+    scrollAnimationClassName = 'fg-dot-scroll-diagonal'
   }
 
   return (

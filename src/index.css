@@ -300,6 +300,20 @@
   animation: fg-stripe-scroll-left 6s linear infinite;
 }
 
+/* Drifts the dot texture diagonally down-and-left, looping seamlessly since
+   the shift matches SectionDecor's 26px dot backgroundSize exactly. */
+@keyframes fg-dot-scroll-diagonal {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -26px 26px;
+  }
+}
+.fg-dot-scroll-diagonal {
+  animation: fg-dot-scroll-diagonal 12s linear infinite;
+}
+
 .fg-marquee-track {
   animation: fg-marquee 30s linear infinite;
 }

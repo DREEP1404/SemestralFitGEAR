@@ -6,6 +6,7 @@ import { RouteTransition } from './RouteTransition'
 interface SiteMainContentProps {
   isAdminPage: boolean
   isShopPage: boolean
+  isCheckoutPage: boolean
   pathname: string
 }
 
@@ -14,7 +15,12 @@ interface SiteMainContentProps {
 // SectionDecor check don't count against SiteChrome's own cognitive
 // complexity, and so it lives alongside the codebase's other single-purpose
 // layout components instead of growing the route file itself.
-export function SiteMainContent({ isAdminPage, isShopPage, pathname }: Readonly<SiteMainContentProps>) {
+export function SiteMainContent({
+  isAdminPage,
+  isShopPage,
+  isCheckoutPage,
+  pathname,
+}: Readonly<SiteMainContentProps>) {
   return (
     <main
       className={
@@ -29,6 +35,21 @@ export function SiteMainContent({ isAdminPage, isShopPage, pathname }: Readonly<
           <div className="absolute inset-0 opacity-100">
             <SectionDecor pattern="dots" dotOpacity={0.36} glowA="bg-lime-400/6" glowB="bg-cyan-500/6" />
           </div>
+        </div>
+      ) : null}
+      {isCheckoutPage ? (
+        // Same dot-texture language as Shop, but dimmer and drifting diagonally
+        // down-left — the payment form still needs to read as the trustworthy
+        // focal point, not a busy background.
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <SectionDecor
+            pattern="dots"
+            dotOpacity={0.22}
+            mask={false}
+            animated
+            glowA="bg-lime-400/6"
+            glowB="bg-lime-400/4"
+          />
         </div>
       ) : null}
       <div
