@@ -148,7 +148,13 @@ export function CheckoutPage() {
             />
           </svg>
         </button>
-        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Completar compra</h1>
+        {/* Rounded rhomboid badge: skew the box, counter-skew the text so it
+            stays upright — same treatment as Shop's "Catálogo FITGEAR" title. */}
+        <div className="inline-block -skew-x-12 rounded-xl bg-lime-400 px-2 py-2">
+          <h1 className="skew-x-12 px-3 text-3xl font-black uppercase leading-none tracking-tight text-slate-950 sm:text-4xl">
+            Completar compra
+          </h1>
+        </div>
       </div>
 
       {error ? (
