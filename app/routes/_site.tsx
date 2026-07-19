@@ -7,6 +7,7 @@ import { CartProvider, useCart } from '../../src/context/CartContext'
 import { Navbar } from '../../src/components/Navbar'
 import { Footer } from '../../src/components/Footer'
 import { CartDrawer } from '../../src/components/cart/CartDrawer'
+import { CartToast } from '../../src/components/CartToast'
 import { ErrorBoundary } from '../../src/components/ErrorBoundary'
 import { SiteMainContent } from '../../src/components/SiteMainContent'
 import { queryClient } from '../../src/lib/queryClient'
@@ -130,6 +131,9 @@ function SiteChrome() {
 
       {isPostLogin || isAdminPage || isCheckoutPage ? null : <Footer />}
       <CartDrawer />
+      {/* Add-to-cart confirmation — mounted once here so cards, quick view and
+          the detail page all surface the same message. Renders nothing idle. */}
+      <CartToast />
     </div>
     </MotionConfig>
   )

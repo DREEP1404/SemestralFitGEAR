@@ -6,9 +6,10 @@ import { ProductCard } from '../components/ProductCard'
 import { ProductGallery } from '../components/product/ProductGallery'
 import { ProductReviews } from '../components/product/ProductReviews'
 import { ProductSizeSelector } from '../components/product/ProductSizeSelector'
-import { useCart } from '../context/CartContext'
+import { useAddToCart } from '../hooks/useAddToCart'
 import type { Product, SizeLabel } from '../types'
 import { formatCurrency } from '../utils/format'
+import { Spinner } from '../components/ui/Spinner'
 
 const trustPoints = [
   'Envío rápido a todo el país',
@@ -41,19 +42,30 @@ function getStockBadge(outOfStock: boolean, lowStock: boolean, stock: number): R
   )
 }
 
-function getAddToCartLabel(outOfStock: boolean, needsSizeChoice: boolean) {
+function getAddToCartLabel(
+  outOfStock: boolean,
+  needsSizeChoice: boolean,
+  isAdding: boolean,
+  isAdded: boolean,
+) {
   if (outOfStock) {
     return 'Sin stock'
   }
   if (needsSizeChoice) {
     return 'Elige una talla'
   }
+  if (isAdding) {
+    return 'Agregando…'
+  }
+  if (isAdded) {
+    return 'Agregado al carrito ✓'
+  }
   return 'Agregar al carrito'
 }
 
 export function ProductDetailPage() {
   const { id } = useParams({ strict: false }) as { id?: string }
-  const { addItem } = useCart()
+  const { add, isAdding, isAdded } = useAddToCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [related, setRelated] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -273,16 +285,25 @@ export function ProductDetailPage() {
 
             <button
               type="button"
-              onClick={() => addItem(product, quantity, selectedSize ?? undefined)}
-              disabled={!canAddToCart}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-lime-400 px-7 py-4 text-sm font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_32px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none sm:flex-none"
+              onClick={() => add(product, quantity, selectedSize ?? undefined)}
+              disabled={!canAddToCart || isAdding}
+              aria-busy={isAdding}
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-7 py-4 text-sm font-bold transition disabled:cursor-not-allowed sm:flex-none ${
+                canAddToCart
+                  ? 'bg-lime-400 text-slate-900 hover:bg-lime-300 hover:shadow-[0_0_32px_-6px_rgba(163,230,53,0.6)] disabled:opacity-90'
+                  : 'bg-slate-700 text-slate-400 shadow-none'
+              }`}
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="10" cy="20" r="1" fill="currentColor" />
-                <circle cx="18" cy="20" r="1" fill="currentColor" />
-              </svg>
-              {getAddToCartLabel(outOfStock, needsSizeChoice)}
+              {isAdding ? (
+                <Spinner className="h-5 w-5" />
+              ) : (
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="10" cy="20" r="1" fill="currentColor" />
+                  <circle cx="18" cy="20" r="1" fill="currentColor" />
+                </svg>
+              )}
+              {getAddToCartLabel(outOfStock, needsSizeChoice, isAdding, isAdded)}
             </button>
           </div>
 
@@ -344,11 +365,17 @@ export function ProductDetailPage() {
           </div>
           <button
             type="button"
-            onClick={() => addItem(product, quantity, selectedSize ?? undefined)}
-            disabled={!canAddToCart}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-lime-400 px-6 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            onClick={() => add(product, quantity, selectedSize ?? undefined)}
+            disabled={!canAddToCart || isAdding}
+            aria-busy={isAdding}
+            className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition disabled:cursor-not-allowed ${
+              canAddToCart
+                ? 'bg-lime-400 text-slate-900 hover:bg-lime-300 disabled:opacity-90'
+                : 'bg-slate-700 text-slate-400'
+            }`}
           >
-            {getAddToCartLabel(outOfStock, needsSizeChoice)}
+            {isAdding ? <Spinner className="h-4 w-4" /> : null}
+            {getAddToCartLabel(outOfStock, needsSizeChoice, isAdding, isAdded)}
           </button>
         </div>
       </div>

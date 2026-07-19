@@ -1,13 +1,59 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useCart } from '../context/CartContext'
+import { useAddToCart } from '../hooks/useAddToCart'
 import { hoverLift } from '../lib/motion'
 import type { Product } from '../types'
 import { formatCurrency } from '../utils/format'
 import { QuickViewModal } from './QuickViewModal'
+import { Spinner } from './ui/Spinner'
+
+// Card button content per state. Kept as a small component so the button's JSX
+// stays a single expression instead of stacked ternaries. The card says
+// "Agregar"/"Agregado ✓" (not the full "Agregar al carrito") to fit its narrow
+// pill — same wording it already used.
+function AddButtonContent({
+  outOfStock,
+  isAdding,
+  isAdded,
+}: Readonly<{ outOfStock: boolean; isAdding: boolean; isAdded: boolean }>) {
+  if (outOfStock) {
+    return <>Sin stock</>
+  }
+
+  if (isAdding) {
+    return (
+      <>
+        <Spinner className="h-3.5 w-3.5" />
+        Agregando…
+      </>
+    )
+  }
+
+  if (isAdded) {
+    return (
+      <>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Agregado ✓
+      </>
+    )
+  }
+
+  return (
+    <>
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="20" r="1" fill="currentColor" />
+        <circle cx="18" cy="20" r="1" fill="currentColor" />
+      </svg>
+      Agregar
+    </>
+  )
+}
 
 export function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart()
+  const { add, isAdding, isAdded } = useAddToCart()
   const outOfStock = product.stock <= 0
   const lowStock = !outOfStock && product.stock <= 5
   // Second photo for the hover cross-fade; single-image products just don't swap.
@@ -117,22 +163,19 @@ export function ProductCard({ product }: { product: Product }) {
         ) : (
           <button
             type="button"
-            onClick={() => addItem(product)}
-            disabled={outOfStock}
-            className="mt-1 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-lime-400 px-4 py-2 text-xs font-bold text-slate-900 transition hover:bg-lime-300 hover:shadow-[0_0_24px_-6px_rgba(163,230,53,0.6)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none"
+            onClick={() => add(product)}
+            disabled={outOfStock || isAdding}
+            aria-busy={isAdding}
+            // Grey is reserved for genuinely unavailable stock; while adding, the
+            // button stays lime (just slightly muted) so the loading state reads
+            // as progress rather than as a disabled control.
+            className={`mt-1 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition disabled:cursor-not-allowed ${
+              outOfStock
+                ? 'bg-slate-700 text-slate-400 shadow-none'
+                : 'bg-lime-400 text-slate-900 hover:bg-lime-300 hover:shadow-[0_0_24px_-6px_rgba(163,230,53,0.6)] disabled:opacity-90'
+            }`}
           >
-            {outOfStock ? (
-              'Sin stock'
-            ) : (
-              <>
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M3 4h2l2.4 11.5a1 1 0 0 0 1 .8h9.9a1 1 0 0 0 1-.8L21 7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="10" cy="20" r="1" fill="currentColor" />
-                  <circle cx="18" cy="20" r="1" fill="currentColor" />
-                </svg>
-                Agregar
-              </>
-            )}
+            <AddButtonContent outOfStock={outOfStock} isAdding={isAdding} isAdded={isAdded} />
           </button>
         )}
       </div>
