@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
-import { useCart } from '../context/CartContext'
+import { useAddToCart } from '../hooks/useAddToCart'
 import { EASE_OUT_ATHLETIC, MOTION_DURATION } from '../lib/motion'
 import type { Product } from '../types'
 import { formatCurrency } from '../utils/format'
+import { Spinner } from './ui/Spinner'
 
 interface QuickViewModalProps {
   product: Product
@@ -27,14 +28,13 @@ const FOCUSABLE =
  * under reduced motion by the app-wide MotionConfig.
  */
 export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
-  const { addItem } = useCart()
+  const { add, isAdding, isAdded } = useAddToCart()
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = `quickview-${product.id}`
 
   const outOfStock = product.stock <= 0
   const lowStock = !outOfStock && product.stock <= 5
   const hasSizes = product.sizes.length > 0
-  const [added, setAdded] = useState(false)
 
   let stockStatusClassName = 'text-lime-400'
   let stockStatusLabel = 'Disponible'
@@ -49,8 +49,10 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   let addButtonLabel = 'Agregar al carrito'
   if (outOfStock) {
     addButtonLabel = 'Sin stock'
-  } else if (added) {
-    addButtonLabel = 'Agregado ✓'
+  } else if (isAdding) {
+    addButtonLabel = 'Agregando…'
+  } else if (isAdded) {
+    addButtonLabel = 'Agregado al carrito ✓'
   }
 
   // Focus management: move focus into the dialog on open, trap Tab within it,
@@ -114,8 +116,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   }, [onClose])
 
   const handleAdd = () => {
-    addItem(product)
-    setAdded(true)
+    add(product)
   }
 
   // Portal to <body>: the card carries a hover `translate` (hoverLift) which
@@ -212,9 +213,15 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
               <button
                 type="button"
                 onClick={handleAdd}
-                disabled={outOfStock}
-                className="inline-flex min-h-[var(--size-touch-min)] flex-1 items-center justify-center gap-2 rounded-full bg-lime-400 px-5 text-sm font-bold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                disabled={outOfStock || isAdding}
+                aria-busy={isAdding}
+                className={`inline-flex min-h-[var(--size-touch-min)] flex-1 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition disabled:cursor-not-allowed ${
+                  outOfStock
+                    ? 'bg-slate-700 text-slate-400'
+                    : 'bg-lime-400 text-slate-900 hover:bg-lime-300 disabled:opacity-90'
+                }`}
               >
+                {isAdding ? <Spinner className="h-4 w-4" /> : null}
                 {addButtonLabel}
               </button>
             )}

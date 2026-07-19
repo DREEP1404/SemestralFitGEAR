@@ -20,7 +20,7 @@ function isSameLine(item: CartItemModel, productId: string, size: SizeLabel | un
 // add/increase path clamps against, so no entry point (product card,
 // product detail, or the cart drawer's own +) can push a line past what's
 // actually available.
-function availableStockFor(product: Product, size: SizeLabel | undefined): number {
+export function availableStockFor(product: Product, size: SizeLabel | undefined): number {
   if (size) {
     return product.sizes.find((entry) => entry.label === size)?.stock ?? 0
   }

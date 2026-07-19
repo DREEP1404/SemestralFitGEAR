@@ -15,7 +15,7 @@ export function Navbar({ minimal = false }: NavbarProps = {}) {
   const navigate = useNavigate()
   const { isLoaded: clerkLoaded, isSignedIn } = useUser()
   const { isAdmin } = useAuth()
-  const { items, openCart } = useCart()
+  const { items, openCart, addPulse } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0)
   const shouldReloadDocument = location.pathname.startsWith('/checkout/')
@@ -160,7 +160,15 @@ export function Navbar({ minimal = false }: NavbarProps = {}) {
                 <circle cx="18" cy="20" r="1" fill="currentColor" />
               </svg>
               {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-lime-400 px-1 text-[10px] font-black text-slate-900">
+                // `key` changes on every successful add, remounting the badge so
+                // the bump animation replays. addPulse starts at 0, so the badge
+                // never animates on page load or on the localStorage restore.
+                <span
+                  key={addPulse}
+                  className={`absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-lime-400 px-1 text-[10px] font-black text-slate-900 ${
+                    addPulse > 0 ? 'animate-cart-bump' : ''
+                  }`}
+                >
                   {cartCount}
                 </span>
               )}
