@@ -5,11 +5,12 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { getProducts } from '../api/fitgearApi'
-import { cartReducer } from '../lib/cartReducer'
+import { availableStockFor, cartReducer } from '../lib/cartReducer'
 import {
   deserializeCart,
   reconcileCart,
@@ -50,6 +51,17 @@ interface CartLine {
   size?: SizeLabel
 }
 
+/** Transient confirmation/error shown after an add-to-cart attempt. */
+export interface CartNotice {
+  /** Monotonic id so the same text re-shown still restarts the timer. */
+  id: number
+  type: 'success' | 'error'
+  message: string
+}
+
+// The confirmation stays up for 3s, then disappears on its own.
+const NOTICE_TTL_MS = 3000
+
 interface CartContextValue {
   items: CartLine[]
   subtotal: number
@@ -59,7 +71,13 @@ interface CartContextValue {
   isCartOpen: boolean
   openCart: () => void
   closeCart: () => void
-  addItem: (product: Product, quantity?: number, size?: SizeLabel) => void
+  /**
+   * Adds a product to the cart. Returns `false` when the line is already at its
+   * available stock, in which case the reducer would clamp it to a silent no-op
+   * — callers use that to show a real "couldn't add" message instead of
+   * pretending the click worked.
+   */
+  addItem: (product: Product, quantity?: number, size?: SizeLabel) => boolean
   removeItem: (productId: string, size?: SizeLabel) => void
   removeMany: (lines: Array<{ productId: string; size?: SizeLabel }>) => void
   increase: (productId: string, size?: SizeLabel) => void
@@ -68,6 +86,15 @@ interface CartContextValue {
   /** Lines dropped while restoring because their product is no longer available. */
   removedOnRestore: RemovedCartLine[]
   dismissRemovedNotice: () => void
+  /** Transient add-to-cart confirmation/error, rendered by <CartToast>. */
+  notice: CartNotice | null
+  showCartNotice: (type: CartNotice['type'], message: string) => void
+  /**
+   * Increments on every add that actually changed the cart — the Navbar badge
+   * watches it to replay its bump animation. Starts at 0 so a page load (and the
+   * localStorage restore) never animates.
+   */
+  addPulse: number
 }
 
 const TAX_RATE = 0.07
@@ -88,6 +115,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // restore re-runs the persist effect with the real cart.
   const [hydrated, setHydrated] = useState(false)
   const [removedOnRestore, setRemovedOnRestore] = useState<RemovedCartLine[]>([])
+  const [notice, setNotice] = useState<CartNotice | null>(null)
+  const [addPulse, setAddPulse] = useState(0)
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const noticeSeqRef = useRef(0)
 
   // Restore the persisted cart on the client only (never during SSR, which would
   // desync server/client HTML and warn about a hydration mismatch). The stored
@@ -159,9 +190,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const openCart = useCallback(() => setIsCartOpen(true), [])
   const closeCart = useCallback(() => setIsCartOpen(false), [])
 
-  const addItem = useCallback((product: Product, quantity = 1, size?: SizeLabel) => {
-    dispatch({ type: 'add', product, quantity, size })
+  const showCartNotice = useCallback((type: CartNotice['type'], message: string) => {
+    // Single slot: a new notice replaces the current one and restarts the timer,
+    // so adding several items quickly never stacks banners.
+    if (noticeTimerRef.current) {
+      clearTimeout(noticeTimerRef.current)
+    }
+    noticeSeqRef.current += 1
+    setNotice({ id: noticeSeqRef.current, type, message })
+    noticeTimerRef.current = setTimeout(() => setNotice(null), NOTICE_TTL_MS)
   }, [])
+
+  // Don't leave the dismiss timer running after the provider unmounts.
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current) {
+        clearTimeout(noticeTimerRef.current)
+      }
+    },
+    [],
+  )
+
+  const addItem = useCallback(
+    (product: Product, quantity = 1, size?: SizeLabel) => {
+      // The reducer clamps every line to its available stock, so adding to a
+      // line that's already at the cap changes nothing. Detect that here and
+      // report it instead of dispatching a no-op the shopper can't see.
+      const cap = availableStockFor(product, size)
+      const currentQuantity =
+        state.find((item) => item.product.id === product.id && item.size === size)?.quantity ?? 0
+
+      if (cap <= 0 || currentQuantity >= cap) {
+        return false
+      }
+
+      dispatch({ type: 'add', product, quantity, size })
+      setAddPulse((value) => value + 1)
+      return true
+    },
+    [state],
+  )
 
   const removeItem = useCallback((productId: string, size?: SizeLabel) => {
     dispatch({ type: 'remove', productId, size })
@@ -201,6 +269,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       removedOnRestore,
       dismissRemovedNotice,
+      notice,
+      showCartNotice,
+      addPulse,
     }),
     [
       items,
@@ -219,6 +290,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       removedOnRestore,
       dismissRemovedNotice,
+      notice,
+      showCartNotice,
+      addPulse,
     ],
   )
 

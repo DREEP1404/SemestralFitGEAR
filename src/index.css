@@ -368,6 +368,47 @@
   }
 }
 
+/* Cart counter feedback: a quick squash-and-stretch bump replayed every time an
+   item is actually added, so the badge visibly reacts instead of just silently
+   incrementing. Applied via a changing React key so the animation restarts on
+   each add. Neutralised by the reduced-motion block above. */
+@keyframes cart-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.4);
+  }
+  65% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-cart-bump {
+  animation: cart-bump 450ms var(--ease-spring);
+}
+
+/* Add-to-cart confirmation entrance (src/components/CartToast.tsx). CSS rather
+   than Framer so the toast never depends on requestAnimationFrame to appear or
+   to be removed — see the note in that component. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in var(--duration-base) var(--ease-out-athletic);
+}
+
 /* CursorSpotlight (src/components/CursorSpotlight.tsx): hidden via CSS, not a
    React state toggle, so there's no client-only render branch to desync from
    SSR. No cursor to follow on touch/coarse pointers, and no cursor-chasing
